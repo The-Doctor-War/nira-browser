@@ -1,32 +1,15 @@
-<p align="center"><a href="#"><img src="https://user-images.githubusercontent.com/44752343/112723990-1d100980-8f09-11eb-94d3-a77cfdb00cd3.png" height="180" title="SmartCookieWeb" alt="SmartCookieWeb"></a></p>
-
-<h2 align="center"><b>SmartCookieWeb Preview</b></h2>
+<h2 align="center"><b>Nira Browser (alpha)</b></h2>
 <p align="center">
-<img src="https://img.shields.io/github/issues-raw/cookiejarapps/SmartCookieWeb-Preview" />
-<img src="https://img.shields.io/github/v/release/cookiejarapps/SmartCookieWeb-Preview" />
-<a href="https://liberapay.com/CookieJarApps"><img src="https://img.shields.io/liberapay/patrons/CookieJarApps" /></a>
-<img src="https://img.shields.io/github/stars/cookiejarapps/SmartCookieWeb-Preview?style=social" />
+<img src="https://img.shields.io/github/issues-raw/prirai/nira" />
+<img src="https://img.shields.io/github/v/release/prirai/nira" />
+<img src="https://img.shields.io/github/stars/prirai/nira?style=social" />
  </p>
 
 ---
 
 ## Screenshots
 
-<table>
- <tr>
- <td><img src="https://user-images.githubusercontent.com/44752343/125917735-eac3475b-6214-4b6d-b34b-3828d888b747.png" /></td>
- <td><img src="https://user-images.githubusercontent.com/44752343/125917736-103500c9-2198-4cc1-bcdf-ad9bb7773b71.png" /></td>
- <td><img src="https://user-images.githubusercontent.com/44752343/125917738-d5fc9d16-09b8-443f-93a5-d15c2d392858.png" /></td>
- <td><img src="https://user-images.githubusercontent.com/44752343/125917729-537db8bc-a101-47a5-b0cf-04de01422335.png" /></td>
- <td><img src="https://user-images.githubusercontent.com/44752343/125917732-72a47364-a9d5-426b-a2d5-cd493876ca56.png" /></td>
- </tr>
-</table>
-
----
-
-## F-Droid
-
-SCWP needs source code changes to be accepted on F-Droid which have not currently been made (building GeckoView and Android Components from source instead of fetching from Mozilla Maven, etc).
+Screenshots will be updated here.
 
 ---
 
@@ -34,10 +17,7 @@ SCWP needs source code changes to be accepted on F-Droid which have not currentl
 
 Need help? Open an issue here, or:
 
-- Email me at `support@cookiejarapps.com`
-- Join the [Telegram chat](https://t.me/scwgroup)
-- Join the [Matrix chat](https://matrix.to/#/#smartcookieweb:matrix.org)
-
+- [social links will be updated]
 ---
 
 ## Installation
@@ -52,12 +32,15 @@ Need help? Open an issue here, or:
 
 - Modern, clean UI
 - Blocks ads and trackers
+- Extensions support including sideloading using urls and file
+- Tab groups (inspired by Opera)
+- Contextual bottom toolbar which shows buttons depending on context
 
 ---
 
 ## Contributing
 
-Contributions are greatly appreciated. Feel free to open an issue or pull request or help translate at (translate.cookiejarapps.com)
+Contributions are greatly appreciated. Feel free to open an issue or pull request or help translate
 
 ---
 

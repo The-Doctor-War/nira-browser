@@ -469,13 +469,22 @@
     >Allow in private browsing</string>
   <string
         name="mozac_feature_addons_successfully_enabled"
-    >Add-on enabled successfully</string>
+    >%s enabled successfully</string>
   <string
         name="mozac_feature_addons_successfully_disabled"
-    >Add-on disabled successfully</string>
+    >%s disabled successfully</string>
+  <string
+        name="mozac_feature_addons_failed_to_enable"
+    >Failed to enable %s</string>
+  <string
+        name="mozac_feature_addons_failed_to_disable"
+    >Failed to disable %s</string>
   <string
         name="mozac_feature_addons_successfully_uninstalled"
-    >Add-on uninstalled successfully</string>
+    >%s uninstalled successfully</string>
+  <string
+        name="mozac_feature_addons_failed_to_uninstall"
+    >Failed to uninstall %s</string>
 
   <!-- Download related strings for Mozilla Components 145.0 compatibility -->
   <string

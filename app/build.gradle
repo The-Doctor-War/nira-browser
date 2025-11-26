@@ -55,7 +55,8 @@ android {
         abi {
             enable true
             reset()
-            include 'arm64-v8a', 'armeabi-v7a'  // STAGE 1: Only keep ARM architectures (99.9% of devices)
+            include 'arm64-v8a', 'armeabi-v7a'
+            // STAGE 1: Only keep ARM architectures (99.9% of devices)
             universalApk false
         }
     }
@@ -73,10 +74,8 @@ android {
     }
 }
 
-def abiBaseMap = [
-        "arm64-v8a"   : 1,
-        "armeabi-v7a" : 2
-        // Removed x86 and x86_64 - only keeping ARM architectures
+def abiBaseMap = ["arm64-v8a"  : 1,
+                  "armeabi-v7a": 2
 ]
 
 androidComponents {
@@ -119,14 +118,6 @@ dependencies {
     implementation "androidx.room:room-runtime:2.8.4"
     ksp "androidx.room:room-compiler:2.8.4"
 
-    final def daggerVersion = '2.57.2'
-    implementation "com.google.dagger:dagger:$daggerVersion"
-    implementation "com.google.dagger:dagger-android:$daggerVersion"
-    implementation "com.google.dagger:dagger-android-support:$daggerVersion"
-    kapt "com.google.dagger:dagger-compiler:$daggerVersion"
-    kapt "com.google.dagger:dagger-android-processor:$daggerVersion"
-    compileOnly 'javax.annotation:jsr250-api:1.0'
-
     final def mozComponentsVersion = "145.0"
 
     // Mozilla compose components
@@ -135,9 +126,9 @@ dependencies {
     // Mozilla concept components
     implementation "org.mozilla.components:concept-storage:$mozComponentsVersion"
     implementation "org.mozilla.components:concept-engine:$mozComponentsVersion"
-    implementation "org.mozilla.components:concept-menu:$mozComponentsVersion" // Kept: required by browser-menu
+    implementation "org.mozilla.components:concept-menu:$mozComponentsVersion"
+    // Kept: required by browser-menu
     implementation "org.mozilla.components:concept-toolbar:$mozComponentsVersion"
-    // Removed: concept-tabstray (not needed - browser-tabstray includes interface)
     implementation "org.mozilla.components:concept-base:$mozComponentsVersion"
     implementation "org.mozilla.components:concept-fetch:$mozComponentsVersion"
     implementation "org.mozilla.components:concept-awesomebar:$mozComponentsVersion"
@@ -145,12 +136,9 @@ dependencies {
     // Mozilla browser components
     implementation "org.mozilla.components:browser-engine-gecko:$mozComponentsVersion"
     implementation "org.mozilla.components:browser-icons:$mozComponentsVersion"
-    // Removed: browser-domains (not used anywhere in code)
     implementation "org.mozilla.components:browser-thumbnails:$mozComponentsVersion"
     implementation "org.mozilla.components:browser-state:$mozComponentsVersion"
     implementation "org.mozilla.components:browser-toolbar:$mozComponentsVersion"
-    // Removed duplicate: browser-state (was declared twice)
-    // Removed: browser-engine-system (not used - using GeckoView instead)
     implementation "org.mozilla.components:browser-session-storage:$mozComponentsVersion"
     implementation "org.mozilla.components:browser-tabstray:$mozComponentsVersion"
     implementation "org.mozilla.components:browser-menu:$mozComponentsVersion"
@@ -159,7 +147,6 @@ dependencies {
 
     // Mozilla feature components
     implementation "org.mozilla.components:feature-awesomebar:$mozComponentsVersion"
-    // Removed: feature-autofill (not used anywhere in code)
     implementation "org.mozilla.components:feature-readerview:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-media:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-search:$mozComponentsVersion"
@@ -171,7 +158,8 @@ dependencies {
     implementation "org.mozilla.components:feature-contextmenu:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-app-links:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-downloads:$mozComponentsVersion"
-    implementation "org.mozilla.components:feature-privatemode:$mozComponentsVersion" // Kept: adds screenshot protection & privacy features
+    implementation "org.mozilla.components:feature-privatemode:$mozComponentsVersion"
+    // Kept: adds screenshot protection & privacy features
     implementation "org.mozilla.components:feature-customtabs:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-pwa:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-prompts:$mozComponentsVersion"
@@ -180,13 +168,12 @@ dependencies {
     implementation "org.mozilla.components:feature-webnotifications:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-addons:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-findinpage:$mozComponentsVersion"
-    implementation "org.mozilla.components:feature-accounts:$mozComponentsVersion" // Added: for Firefox Account sync (bookmarks/history/tabs)
-    // Removed duplicate: feature-prompts (was declared twice)
+    implementation "org.mozilla.components:feature-accounts:$mozComponentsVersion"
+    // Added: for Firefox Account sync (bookmarks/history/tabs)
 
     // Mozilla service components
     implementation "org.mozilla.components:service-location:$mozComponentsVersion"
     implementation "org.mozilla.components:service-digitalassetlinks:$mozComponentsVersion"
-    // Removed: service-sync-logins (only for password syncing - not needed)
 
     // Mozilla support components
     implementation "org.mozilla.components:support-base:$mozComponentsVersion"
@@ -217,10 +204,6 @@ dependencies {
 
     // OkHTTP
     implementation "com.squareup.okhttp3:okhttp:5.3.2"
-
-    implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
-    implementation 'io.reactivex.rxjava2:rxjava:2.2.21'
-    implementation 'io.reactivex.rxjava2:rxkotlin:2.4.0'
 
     implementation "androidx.compose.ui:ui:1.9.5"
     implementation "androidx.compose.foundation:foundation:1.9.5"

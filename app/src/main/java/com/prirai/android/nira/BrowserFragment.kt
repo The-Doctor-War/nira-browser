@@ -94,13 +94,18 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
     }
 
     private fun setupContextualBottomToolbar() {
+        // Toolbar is managed by ModernToolbarManager
+        // This function is kept for compatibility but actual setup happens in ModernToolbarManager
+        
         // Use integrated toolbar from the address bar component, fallback to separate one
         val toolbar =
             (browserToolbarView.integratedContextualToolbar as? com.prirai.android.nira.toolbar.ContextualBottomToolbar)
                 ?: binding.contextualBottomToolbar
 
-        // Force bottom toolbar to show for testing iOS icons
-        val showBottomToolbar = true // UserPreferences(requireContext()).shouldUseBottomToolbar
+        // Note: The listener is set by ModernToolbarManager, not here
+        // This old code is kept for reference but not used:
+        /*
+        val showBottomToolbar = true
         if (showBottomToolbar) {
             toolbar.visibility = View.VISIBLE
         } else {
@@ -108,7 +113,6 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
         }
 
         if (showBottomToolbar) {
-            android.util.Log.d("BrowserFragment", "Setting toolbar listener, toolbar=$toolbar")
             toolbar.listener = object : ContextualBottomToolbar.ContextualToolbarListener {
                 override fun onBackClicked() {
                     requireContext().components.sessionUseCases.goBack()
@@ -220,10 +224,8 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                     }, 3000) // 3 seconds cleanup delay
                 }
             }
-
-            // Update toolbar context when tab changes
-            updateContextualToolbar()
         }
+        */
     }
 
     private fun updateContextualToolbar() {
@@ -475,17 +477,11 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
             }
 
             com.prirai.android.nira.components.toolbar.modern.ModernToolbarManager.NavigationAction.SEARCH -> {
-                // Navigate to search dialog (same as HomeFragment)
-                android.util.Log.d("BrowserFragment", "NavigationAction.SEARCH triggered")
-                try {
-                    val directions = com.prirai.android.nira.browser.home.HomeFragmentDirections.actionGlobalSearchDialog(
-                        sessionId = null
-                    )
-                    nav(R.id.browserFragment, directions)
-                    android.util.Log.d("BrowserFragment", "Navigated to search dialog")
-                } catch (e: Exception) {
-                    android.util.Log.e("BrowserFragment", "Search navigation failed", e)
-                }
+                // Navigate to search dialog
+                val directions = com.prirai.android.nira.browser.home.HomeFragmentDirections.actionGlobalSearchDialog(
+                    sessionId = null
+                )
+                nav(R.id.browserFragment, directions)
             }
 
             com.prirai.android.nira.components.toolbar.modern.ModernToolbarManager.NavigationAction.NEW_TAB -> {

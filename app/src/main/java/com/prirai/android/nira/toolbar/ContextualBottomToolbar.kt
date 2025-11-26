@@ -77,7 +77,13 @@ class ContextualBottomToolbar @JvmOverloads constructor(
         }
         forwardButton.setOnClickListener { listener?.onForwardClicked() }
         shareButton.setOnClickListener { listener?.onShareClicked() }
-        searchButton.setOnClickListener { listener?.onSearchClicked() }
+        searchButton.setOnClickListener { 
+            android.util.Log.d("ContextualBottomToolbar", "Search button clicked, listener=$listener")
+            listener?.onSearchClicked()
+            if (listener == null) {
+                android.util.Log.e("ContextualBottomToolbar", "Listener is null! Cannot trigger search.")
+            }
+        }
         newTabButton.setOnClickListener { listener?.onNewTabClicked() }
         tabCountButton.setOnClickListener { listener?.onTabCountClicked() }
         menuButton.setOnClickListener { listener?.onMenuClicked() }

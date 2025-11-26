@@ -5,6 +5,7 @@ import com.prirai.android.nira.browser.toolbar.ToolbarGestureHandler
 import com.prirai.android.nira.browser.toolbar.WebExtensionToolbarFeature
 import com.prirai.android.nira.toolbar.ContextualBottomToolbar
 import com.prirai.android.nira.ext.components
+import com.prirai.android.nira.ext.nav
 import com.prirai.android.nira.preferences.UserPreferences
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import androidx.lifecycle.lifecycleScope
@@ -107,6 +108,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
         }
 
         if (showBottomToolbar) {
+            android.util.Log.d("BrowserFragment", "Setting toolbar listener, toolbar=$toolbar")
             toolbar.listener = object : ContextualBottomToolbar.ContextualToolbarListener {
                 override fun onBackClicked() {
                     requireContext().components.sessionUseCases.goBack()
@@ -135,8 +137,10 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                 }
 
                 override fun onSearchClicked() {
-                    // Focus on the toolbar for search
-                    browserToolbarView.view.displayMode()
+                    // Trigger toolbar click to open search/address bar
+                    android.util.Log.d("BrowserFragment", "Search button clicked on homepage")
+                    browserToolbarView.view.performClick()
+                    android.util.Log.d("BrowserFragment", "Performed click on toolbar view")
                 }
 
                 override fun onNewTabClicked() {
@@ -471,19 +475,16 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
             }
 
             com.prirai.android.nira.components.toolbar.modern.ModernToolbarManager.NavigationAction.SEARCH -> {
-                // Connect to the same search functionality from about:homepage
+                // Navigate to search dialog (same as HomeFragment)
+                android.util.Log.d("BrowserFragment", "NavigationAction.SEARCH triggered")
                 try {
-                    // Navigate to search screen like the working implementation
-                    // Navigate to search - using the working homepage search functionality
+                    val directions = com.prirai.android.nira.browser.home.HomeFragmentDirections.actionGlobalSearchDialog(
+                        sessionId = null
+                    )
+                    nav(R.id.browserFragment, directions)
+                    android.util.Log.d("BrowserFragment", "Navigated to search dialog")
                 } catch (e: Exception) {
-                    android.util.Log.e("ModernToolbar", "Search navigation failed", e)
-                    // Fallback: try alternative search methods
-                    try {
-                        // Alternative: Focus on the address bar for search
-                        browserToolbarView.view.requestFocus()
-                    } catch (e2: Exception) {
-                        android.util.Log.e("ModernToolbar", "Search fallback failed", e2)
-                    }
+                    android.util.Log.e("BrowserFragment", "Search navigation failed", e)
                 }
             }
 

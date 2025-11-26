@@ -16,6 +16,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.recyclerview.widget.RecyclerView
 import com.prirai.android.nira.R
 import mozilla.components.browser.state.state.SessionState
@@ -342,43 +343,53 @@ class ModernTabPillAdapter(
 
         private fun applyPillStyling(isSelected: Boolean, item: TabPillItem.Tab) {
             val islandColor = item.islandColor
+            
+            // Get default background color
+            val backgroundColor = if (isDarkMode()) {
+                ContextCompat.getColor(itemView.context, android.R.color.background_dark)
+            } else {
+                ContextCompat.getColor(itemView.context, android.R.color.background_light)
+            }
 
             if (isSelected) {
-                // Selected: Vibrant pill with island color or default
-                val color = islandColor ?: 0xFF6200EE.toInt()
+                // Selected: Show prominent border with island color or default
+                val borderColor = islandColor ?: 0xFF6200EE.toInt()
                 val gradient = GradientDrawable().apply {
-                    cornerRadius = 18f
-                    setColor(color)
-                    alpha = 230
+                    cornerRadius = 20f
+                    setColor(backgroundColor)
+                    // Prominent border for selected state (3dp)
+                    val strokeWidth = (3 * itemView.resources.displayMetrics.density).toInt()
+                    setStroke(strokeWidth, borderColor)
                 }
                 cardView.background = gradient
-                cardView.elevation = 12f
-                cardView.scaleX = 1.02f
-                cardView.scaleY = 1.02f
+                cardView.elevation = 8f
+                cardView.scaleX = 1.0f
+                cardView.scaleY = 1.0f
 
-                titleView.setTextColor(Color.WHITE)
-                selectionIndicator.visibility = View.VISIBLE
-                selectionIndicator.setBackgroundColor(Color.WHITE)
+                val textColor = if (isDarkMode()) {
+                    ContextCompat.getColor(itemView.context, android.R.color.primary_text_dark_nodisable)
+                } else {
+                    ContextCompat.getColor(itemView.context, android.R.color.primary_text_light_nodisable)
+                }
+                titleView.setTextColor(textColor)
+                selectionIndicator.visibility = View.GONE
 
                 cardView.outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
-                cardView.clipToOutline = false
+                cardView.clipToOutline = true
 
             } else {
-                // Unselected: Subtle pill with island color hint
-                val backgroundColor = if (isDarkMode()) {
-                    ContextCompat.getColor(itemView.context, android.R.color.background_dark)
-                } else {
-                    ContextCompat.getColor(itemView.context, android.R.color.background_light)
-                }
-
+                // Unselected: Subtle pill with island color hint or subtle border
                 val gradient = GradientDrawable().apply {
                     cornerRadius = 20f
                     setColor(backgroundColor)
                     if (islandColor != null) {
-                        // Show colored left border for island tabs
-                        setStroke(4, islandColor)
+                        // Show subtle colored border for island tabs (2dp)
+                        val strokeWidth = (2 * itemView.resources.displayMetrics.density).toInt()
+                        setStroke(strokeWidth, islandColor)
                     } else {
-                        setStroke(2, 0x40FFFFFF)
+                        // Very subtle border for unselected regular tabs (1dp)
+                        val strokeWidth = (1 * itemView.resources.displayMetrics.density).toInt()
+                        setStroke(strokeWidth, 0x30FFFFFF)
                     }
                 }
                 cardView.background = gradient
@@ -570,7 +581,8 @@ class ModernTabPillAdapter(
 
             // Add each tab to the container
             tabs.forEachIndexed { index, tab ->
-                val tabView = createTabPillView(tab, island, index)
+                val isLastTab = index == tabs.size - 1
+                val tabView = createTabPillView(tab, island, index, isLastTab)
                 // Store tab ID as tag for later updates
                 tabView.tag = tab.id
                 tabsContainer.addView(tabView)
@@ -579,7 +591,8 @@ class ModernTabPillAdapter(
 
         fun updateTabSelection(tabId: String, island: TabIsland) {
             // Update selection state for tabs in this group
-            for (i in 0 until tabsContainer.childCount) {
+            val tabCount = tabsContainer.childCount
+            for (i in 0 until tabCount) {
                 val tabView = tabsContainer.getChildAt(i)
                 val storedTabId = tabView.tag as? String
                 if (storedTabId != null) {
@@ -588,31 +601,65 @@ class ModernTabPillAdapter(
                     val faviconView: ImageView = tabView.findViewById(R.id.tabFavicon)
 
                     val isSelected = storedTabId == tabId
+                    val isLastTab = i == tabCount - 1
+                    
                     if (isSelected) {
-                        // Selected tab: highlight with island color
+                        // Selected tab: show border with rounded corners on last tab
                         val gradient = GradientDrawable().apply {
-                            cornerRadius = 0f
-                            setColor(island.color)
+                            setColor(Color.TRANSPARENT)
+                            // Prominent border for selected state (3dp stroke width)
+                            val strokeWidth = (3 * itemView.resources.displayMetrics.density).toInt()
+                            setStroke(strokeWidth, island.color)
+                            // Only round top-right and bottom-right corners for last tab
+                            if (isLastTab) {
+                                val radius = 12f * itemView.resources.displayMetrics.density
+                                cornerRadii = floatArrayOf(
+                                    0f, 0f,              // top-left
+                                    radius, radius,      // top-right (rounded)
+                                    radius, radius,      // bottom-right (rounded)
+                                    0f, 0f               // bottom-left
+                                )
+                            }
                         }
                         tabContent.background = gradient
-                        titleView.setTextColor(Color.WHITE)
-                        faviconView.alpha = 1.0f
-                    } else {
-                        // Unselected tab: transparent background
-                        tabContent.setBackgroundColor(Color.TRANSPARENT)
                         val textColor = if (isDarkMode()) {
                             ContextCompat.getColor(itemView.context, android.R.color.primary_text_dark_nodisable)
                         } else {
                             ContextCompat.getColor(itemView.context, android.R.color.primary_text_light_nodisable)
                         }
                         titleView.setTextColor(textColor)
+                        titleView.setTypeface(null, android.graphics.Typeface.BOLD)
+                        faviconView.alpha = 1.0f
+                    } else {
+                        // Unselected tab: transparent background
+                        val gradient = GradientDrawable().apply {
+                            setColor(Color.TRANSPARENT)
+                            // Only round top-right and bottom-right corners for last tab
+                            if (isLastTab) {
+                                val radius = 12f * itemView.resources.displayMetrics.density
+                                cornerRadii = floatArrayOf(
+                                    0f, 0f,              // top-left
+                                    radius, radius,      // top-right (rounded)
+                                    radius, radius,      // bottom-right (rounded)
+                                    0f, 0f               // bottom-left
+                                )
+                            }
+                        }
+                        tabContent.background = gradient
+                        val textColor = if (isDarkMode()) {
+                            ContextCompat.getColor(itemView.context, android.R.color.primary_text_dark_nodisable)
+                        } else {
+                            ContextCompat.getColor(itemView.context, android.R.color.primary_text_light_nodisable)
+                        }
+                        titleView.setTextColor(textColor)
+                        titleView.setTypeface(null, android.graphics.Typeface.NORMAL)
                         faviconView.alpha = 0.8f
                     }
                 }
             }
         }
 
-        private fun createTabPillView(tab: SessionState, island: TabIsland, index: Int): View {
+        private fun createTabPillView(tab: SessionState, island: TabIsland, index: Int, isLastTab: Boolean): View {
             val tabView = LayoutInflater.from(itemView.context)
                 .inflate(R.layout.tab_pill_in_group, tabsContainer, false)
 
@@ -642,23 +689,55 @@ class ModernTabPillAdapter(
             // Apply styling based on selection
             val isSelected = tab.id == selectedTabId
             if (isSelected) {
-                // Selected tab: highlight with island color using gradient drawable
+                // Selected tab: show border with rounded corners on last tab
                 val gradient = GradientDrawable().apply {
-                    cornerRadius = 0f
-                    setColor(island.color)
+                    setColor(Color.TRANSPARENT)
+                    // Prominent border for selected state (3dp stroke width)
+                    val strokeWidth = (3 * itemView.resources.displayMetrics.density).toInt()
+                    setStroke(strokeWidth, island.color)
+                    // Only round top-right and bottom-right corners for last tab
+                    if (isLastTab) {
+                        val radius = 12f * itemView.resources.displayMetrics.density
+                        cornerRadii = floatArrayOf(
+                            0f, 0f,              // top-left
+                            radius, radius,      // top-right (rounded)
+                            radius, radius,      // bottom-right (rounded)
+                            0f, 0f               // bottom-left
+                        )
+                    }
                 }
                 tabContent.background = gradient
-                titleView.setTextColor(Color.WHITE)
-                faviconView.alpha = 1.0f
-            } else {
-                // Unselected tab: transparent background
-                tabContent.setBackgroundColor(Color.TRANSPARENT)
                 val textColor = if (isDarkMode()) {
                     ContextCompat.getColor(itemView.context, android.R.color.primary_text_dark_nodisable)
                 } else {
                     ContextCompat.getColor(itemView.context, android.R.color.primary_text_light_nodisable)
                 }
                 titleView.setTextColor(textColor)
+                titleView.setTypeface(null, android.graphics.Typeface.BOLD)
+                faviconView.alpha = 1.0f
+            } else {
+                // Unselected tab: transparent background with optional subtle border
+                val gradient = GradientDrawable().apply {
+                    setColor(Color.TRANSPARENT)
+                    // Only round top-right and bottom-right corners for last tab
+                    if (isLastTab) {
+                        val radius = 12f * itemView.resources.displayMetrics.density
+                        cornerRadii = floatArrayOf(
+                            0f, 0f,              // top-left
+                            radius, radius,      // top-right (rounded)
+                            radius, radius,      // bottom-right (rounded)
+                            0f, 0f               // bottom-left
+                        )
+                    }
+                }
+                tabContent.background = gradient
+                val textColor = if (isDarkMode()) {
+                    ContextCompat.getColor(itemView.context, android.R.color.primary_text_dark_nodisable)
+                } else {
+                    ContextCompat.getColor(itemView.context, android.R.color.primary_text_light_nodisable)
+                }
+                titleView.setTextColor(textColor)
+                titleView.setTypeface(null, android.graphics.Typeface.NORMAL)
                 faviconView.alpha = 0.8f
             }
 

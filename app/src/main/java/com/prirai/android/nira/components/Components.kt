@@ -197,15 +197,14 @@ open class Components(private val applicationContext: Context) {
                         PromptMiddleware(),
                         LastAccessMiddleware(),
                         SaveToPDFMiddleware(applicationContext),
-                        com.prirai.android.nira.browser.tabgroups.TabGroupMiddleware(tabGroupManager),
-                        // NEW: Session prioritization - captures state and manages engine session priorities
-                        SessionPrioritizationMiddleware(),
-                        // NEW: Enhanced state capture middleware - Phase 3 optimization
-                        // Captures state for selected + top 2 recently accessed tabs
-                        EnhancedStateCaptureMiddleware(
-                            scope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
-                            maxTabsToCapture = 3
-                        )
+                        com.prirai.android.nira.browser.tabgroups.TabGroupMiddleware(tabGroupManager)
+                        // Temporarily disabled due to autofill reload issue
+                        // TODO: Re-enable with proper idle detection to avoid false triggers
+                        // SessionPrioritizationMiddleware(),
+                        // EnhancedStateCaptureMiddleware(
+                        //     scope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
+                        //     maxTabsToCapture = 3
+                        // )
                 ) + EngineMiddleware.create(
                     engine,
                     trimMemoryAutomatically = false,

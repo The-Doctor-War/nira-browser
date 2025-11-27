@@ -543,6 +543,11 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         )
 
         initializeEngineView(toolbarHeight)
+        
+        // Defer heavy feature initialization to visual completeness queue
+        context.components.visualCompletenessQueue.runIfReadyOrQueue {
+            // Future: Additional feature initialization can go here
+        }
     }
 
     private suspend fun provideAddons(): List<Addon> {

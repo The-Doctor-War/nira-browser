@@ -99,7 +99,8 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
 
         super.onCreate(savedInstanceState)
 
-        components.publicSuffixList.prefetch()
+        // OPTIMIZATION: Don't access components.publicSuffixList here - defer it
+        // This was triggering lazy initialization chain
 
         browsingModeManager = createBrowsingModeManager(
             if (UserPreferences(this).lastKnownPrivate) BrowsingMode.Private else BrowsingMode.Normal
@@ -117,47 +118,12 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
 
         lastToolbarPosition = UserPreferences(this).toolbarPosition
 
-        //TODO: Move to settings page so app restart no longer required
-        //TODO: Differentiate between using search engine / adding to list - the code below removes all from list as I don't support adding to list, only setting as default
-        for (i in components.store.state.search.customSearchEngines) {
-            components.searchUseCases.removeSearchEngine(i)
-        }
-
-        if (UserPreferences(this).customSearchEngine) {
-            // SECURITY: Use lifecycle-aware coroutine scope
-            lifecycleScope.launch {
-                val customSearch =
-                    createSearchEngine(
-                        name = "Custom Search",
-                        url = UserPreferences(this@BrowserActivity).customSearchEngineURL,
-                        icon = components.icons.loadIcon(IconRequest(UserPreferences(this@BrowserActivity).customSearchEngineURL))
-                            .await().bitmap
-                    )
-
-                runOnUiThread {
-                    components.searchUseCases.addSearchEngine(
-                        customSearch
-                    )
-                    components.searchUseCases.selectSearchEngine(
-                        customSearch
-                    )
-                }
-            }
-        } else {
-            if (SearchEngineList().getEngines()[UserPreferences(this).searchEngineChoice].type == SearchEngine.Type.BUNDLED) {
-                components.searchUseCases.selectSearchEngine(
-                    SearchEngineList().getEngines()[UserPreferences(this).searchEngineChoice]
-                )
-            } else {
-                components.searchUseCases.addSearchEngine(
-                    SearchEngineList().getEngines()[UserPreferences(
-                        this
-                    ).searchEngineChoice]
-                )
-                components.searchUseCases.selectSearchEngine(
-                    SearchEngineList().getEngines()[UserPreferences(this).searchEngineChoice]
-                )
-            }
+        // OPTIMIZATION: Defer search engine setup to after first frame
+        // This was accessing components.store.state which triggers heavy initialization
+        view.post {
+            setupSearchEngines()
+            // Also prefetch publicSuffixList after UI is ready
+            components.publicSuffixList.prefetch()
         }
 
         if (isActivityColdStarted(intent, savedInstanceState) &&
@@ -214,11 +180,21 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
             WindowInsetsCompat.CONSUMED
         }
 
-        components.appRequestInterceptor.setNavController(navHost.navController)
-
-        lifecycle.addObserver(webExtensionPopupFeature)
-
+        // OPTIMIZATION: Components that need lifecycle registration must be initialized in onCreate
+        // These still trigger lazy component init but are required for proper lifecycle
         components.notificationsDelegate.bindToActivity(this)
+        
+        // OPTIMIZATION: Defer non-critical component initialization to after first frame
+        view.post {
+            components.appRequestInterceptor.setNavController(navHost.navController)
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Register lifecycle observer here - must be done before RESUMED state
+        // This still defers the components initialization but meets lifecycle requirements
+        lifecycle.addObserver(webExtensionPopupFeature)
     }
 
     override fun onResume() {
@@ -490,6 +466,54 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
     override fun attachBaseContext(base: Context) {
         this.originalContext = base
         super.attachBaseContext(base)
+    }
+
+    /**
+     * Setup search engines - extracted to separate method for deferred initialization
+     */
+    private fun setupSearchEngines() {
+        //TODO: Move to settings page so app restart no longer required
+        //TODO: Differentiate between using search engine / adding to list - the code below removes all from list as I don't support adding to list, only setting as default
+        for (i in components.store.state.search.customSearchEngines) {
+            components.searchUseCases.removeSearchEngine(i)
+        }
+
+        if (UserPreferences(this).customSearchEngine) {
+            // SECURITY: Use lifecycle-aware coroutine scope
+            lifecycleScope.launch {
+                val customSearch =
+                    createSearchEngine(
+                        name = "Custom Search",
+                        url = UserPreferences(this@BrowserActivity).customSearchEngineURL,
+                        icon = components.icons.loadIcon(IconRequest(UserPreferences(this@BrowserActivity).customSearchEngineURL))
+                            .await().bitmap
+                    )
+
+                runOnUiThread {
+                    components.searchUseCases.addSearchEngine(
+                        customSearch
+                    )
+                    components.searchUseCases.selectSearchEngine(
+                        customSearch
+                    )
+                }
+            }
+        } else {
+            if (SearchEngineList().getEngines()[UserPreferences(this).searchEngineChoice].type == SearchEngine.Type.BUNDLED) {
+                components.searchUseCases.selectSearchEngine(
+                    SearchEngineList().getEngines()[UserPreferences(this).searchEngineChoice]
+                )
+            } else {
+                components.searchUseCases.addSearchEngine(
+                    SearchEngineList().getEngines()[UserPreferences(
+                        this
+                    ).searchEngineChoice]
+                )
+                components.searchUseCases.selectSearchEngine(
+                    SearchEngineList().getEngines()[UserPreferences(this).searchEngineChoice]
+                )
+            }
+        }
     }
 
     /**

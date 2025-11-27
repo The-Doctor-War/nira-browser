@@ -1,6 +1,7 @@
 package com.prirai.android.nira.components
 
 import android.content.Context
+import com.prirai.android.nira.perf.VisualCompletenessQueue
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import androidx.core.app.NotificationManagerCompat
@@ -79,6 +80,9 @@ private const val DAY_IN_MINUTES = 24 * 60L
 
 @Suppress("LargeClass")
 open class Components(private val applicationContext: Context) {
+    
+    // Visual completeness queue for deferred initialization
+    val visualCompletenessQueue = VisualCompletenessQueue()
     companion object {
         const val BROWSER_PREFERENCES = "browser_preferences"
         const val PREF_LAUNCH_EXTERNAL_APP = "launch_external_app"

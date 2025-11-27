@@ -27,8 +27,12 @@ class BrowserApp : LocaleAwareApplication() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     val components by lazy { Components(this) }
+    
+    // Track startup timing
+    private var appStartTime = 0L
 
     override fun onCreate() {
+        appStartTime = System.currentTimeMillis()
         super.onCreate()
 
         if (!isMainProcess()) {
@@ -37,51 +41,99 @@ class BrowserApp : LocaleAwareApplication() {
 
         Facts.registerProcessor(LogFactProcessor())
 
+        // CRITICAL: Only warmUp the engine - don't trigger full initialization yet
+        // This prepares GeckoView but doesn't block on heavy operations
         components.engine.warmUp()
-        restoreBrowserState()
 
         applyAppTheme(this)
 
+        logger.info("App onCreate completed in ${System.currentTimeMillis() - appStartTime}ms")
+
+        // OPTIMIZATION: Defer all heavy initialization to after first frame is drawn
+        // This allows the UI to show immediately, then we initialize in background
+        applicationScope.launch(Dispatchers.Main) {
+            // Use postDelayed to ensure this runs AFTER the first frame is rendered
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                initializeAfterFirstFrame()
+            }
+        }
+    }
+
+    private fun initializeAfterFirstFrame() {
+        logger.info("Starting deferred initialization (${System.currentTimeMillis() - appStartTime}ms after app start)")
+        
+        // Restore browser state in background
+        restoreBrowserState()
+        
+        // Initialize web extensions - MUST run on Main thread due to GeckoView Handler requirements
+        applicationScope.launch(Dispatchers.Main) {
+            initializeWebExtensions()
+        }
+        
+        // Queue storage warming for after visual completeness
+        queueStorageWarmup()
+        
+        // Warm up web app manifest storage in background
         applicationScope.launch(Dispatchers.IO) {
             components.webAppManifestStorage.warmUpScopes(System.currentTimeMillis())
         }
-        components.downloadsUseCases.restoreDownloads()
-
-        run {
-            try {
-                GlobalAddonDependencyProvider.initialize(
-                    components.addonManager,
-                    components.addonUpdater,
-                    onCrash = { logger.error("Addon dependency provider crashed", it) },
-                )
-                WebExtensionSupport.initialize(
-                    components.engine,
-                    components.store,
-                    onNewTabOverride = { _, engineSession, url ->
-                        val shouldCreatePrivateSession =
-                            components.store.state.selectedTab?.content?.private ?: false
-
-                        components.tabsUseCases.addTab(
-                            url = url,
-                            selectTab = true,
-                            engineSession = engineSession,
-                            private = shouldCreatePrivateSession,
-                        )
-                    },
-                    onCloseTabOverride = { _, sessionId ->
-                        components.tabsUseCases.removeTab(sessionId)
-                    },
-                    onSelectTabOverride = { _, sessionId ->
-                        components.tabsUseCases.selectTab(sessionId)
-                    },
-                    onExtensionsLoaded = { extensions ->
-                        components.addonUpdater.registerForFutureUpdates(extensions)
-                    },
-                    onUpdatePermissionRequest = components.addonUpdater::onUpdatePermissionRequest,
-                )
-            } catch (e: UnsupportedOperationException) {
-                Logger.error("Failed to initialize web extension support", e)
+        
+        // Restore downloads in background
+        applicationScope.launch(Dispatchers.Main) {
+            components.downloadsUseCases.restoreDownloads()
+        }
+        
+        // Mark the visual completeness queue as ready - this will run all queued tasks
+        applicationScope.launch(Dispatchers.Main) {
+            components.visualCompletenessQueue.ready()
+            logger.info("Visual completeness queue ready")
+        }
+    }
+    
+    private fun queueStorageWarmup() {
+        components.visualCompletenessQueue.runIfReadyOrQueue {
+            applicationScope.launch(Dispatchers.IO) {
+                // Warm up available storage
+                components.historyStorage
+                logger.info("Storage warmup completed")
             }
+        }
+    }
+
+    private fun initializeWebExtensions() {
+        try {
+            GlobalAddonDependencyProvider.initialize(
+                components.addonManager,
+                components.addonUpdater,
+                onCrash = { logger.error("Addon dependency provider crashed", it) },
+            )
+            WebExtensionSupport.initialize(
+                components.engine,
+                components.store,
+                onNewTabOverride = { _, engineSession, url ->
+                    val shouldCreatePrivateSession =
+                        components.store.state.selectedTab?.content?.private ?: false
+
+                    components.tabsUseCases.addTab(
+                        url = url,
+                        selectTab = true,
+                        engineSession = engineSession,
+                        private = shouldCreatePrivateSession,
+                    )
+                },
+                onCloseTabOverride = { _, sessionId ->
+                    components.tabsUseCases.removeTab(sessionId)
+                },
+                onSelectTabOverride = { _, sessionId ->
+                    components.tabsUseCases.selectTab(sessionId)
+                },
+                onExtensionsLoaded = { extensions ->
+                    components.addonUpdater.registerForFutureUpdates(extensions)
+                },
+                onUpdatePermissionRequest = components.addonUpdater::onUpdatePermissionRequest,
+            )
+        } catch (e: UnsupportedOperationException) {
+            Logger.error("Failed to initialize web extension support", e)
         }
     }
 

@@ -162,40 +162,184 @@
                 color: #8f8f9d;
             }
         }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .add-shortcut-button {
+            width: 32px;
+            height: 32px;
+            background: #0060df;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .add-shortcut-button:hover {
+            background: #0250bb;
+        }
+
+        .add-shortcut-button:active {
+            background: #054096;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .add-shortcut-button {
+                background: #0060df;
+            }
+            .add-shortcut-button:hover {
+                background: #0080ff;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .modal-content {
+                background-color: #2b2a33;
+            }
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: #15141a;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .modal-header {
+                color: #fbfbfe;
+            }
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #d7d7db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #ffffff;
+            color: #000000;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .modal-input {
+                background: #42414d;
+                color: #fbfbfe;
+                border-color: #4a4a4f;
+            }
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .modal-button-primary {
+            background: #0060df;
+            color: white;
+        }
+
+        .modal-button-primary:hover {
+            background: #0250bb;
+        }
+
+        .modal-button-secondary {
+            background: #f0f0f4;
+            color: #15141a;
+        }
+
+        .modal-button-secondary:hover {
+            background: #e0e0e6;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .modal-button-secondary {
+                background: #42414d;
+                color: #fbfbfe;
+            }
+            .modal-button-secondary:hover {
+                background: #52515d;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="logo-container">
-        <img src="app-icon.png" alt="App Logo" id="appLogo">
+        <img src="file:///android_asset/app-icon.png" alt="App Logo" id="appLogo" onerror="this.style.display='none'">
         <div class="app-name">Nira</div>
     </div>
 
-    <div class="search-container">
-        <input type="text" class="search-box" placeholder="Search or enter address" id="searchInput">
+    <div class="section-header">
+        <div class="section-title">Add your favorite shortcuts here</div>
+        <button class="add-shortcut-button" id="addShortcutBtn" title="Add Shortcut">+</button>
     </div>
-
-    <div class="section-title">Shortcuts</div>
     <div class="shortcuts-container" id="shortcutsContainer">
         <!-- Shortcuts will be dynamically loaded here -->
     </div>
 
-    <script>
-        // Handle search input
-        const searchInput = document.getElementById('searchInput');
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const query = searchInput.value.trim();
-                if (query) {
-                    // Send search query to Android
-                    window.location.href = 'nira://search?q=' + encodeURIComponent(query);
-                }
-            }
-        });
+    <div class="section-title" style="margin-top: 32px;">Bookmarks</div>
+    <div class="shortcuts-container" id="bookmarksContainer">
+        <!-- Bookmarks will be dynamically loaded here -->
+    </div>
 
-        // Focus on search when clicking anywhere
-        searchInput.addEventListener('click', function() {
-            window.location.href = 'nira://focus-search';
-        });
+    <!-- Add Shortcut Modal -->
+    <div class="modal" id="addShortcutModal">
+        <div class="modal-content">
+            <div class="modal-header">Add Shortcut</div>
+            <input type="url" class="modal-input" id="shortcutUrl" placeholder="Enter URL (e.g., https://example.com)">
+            <input type="text" class="modal-input" id="shortcutTitle" placeholder="Enter title">
+            <div class="modal-buttons">
+                <button class="modal-button modal-button-secondary" id="cancelBtn">Cancel</button>
+                <button class="modal-button modal-button-primary" id="saveBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
 
         // Load shortcuts from Android
         function loadShortcuts() {
@@ -261,13 +405,107 @@
             }
         }
 
+        // Load bookmarks from Android
+        function loadBookmarks() {
+            // Request bookmarks from Android via JavaScript interface
+            if (window.NiraBookmarks) {
+                const bookmarks = window.NiraBookmarks.getBookmarks();
+                displayBookmarks(JSON.parse(bookmarks));
+            } else {
+                // Fallback: show message
+                displayBookmarks([]);
+            }
+        }
+
+        function displayBookmarks(bookmarks) {
+            const container = document.getElementById('bookmarksContainer');
+            
+            if (bookmarks.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8f8f9d; padding: 20px;">No bookmarks yet. Add bookmarks while browsing.</div>';
+                return;
+            }
+
+            container.innerHTML = bookmarks.map(bookmark => `
+                <a href="${escapeHtml(bookmark.url)}" class="shortcut-item">
+                    <div class="shortcut-icon">${getIconHtml(bookmark.url, bookmark.icon)}</div>
+                    <div class="shortcut-title">${escapeHtml(bookmark.title)}</div>
+                </a>
+            `).join('');
+        }
+
+        // Modal handling
+        const modal = document.getElementById('addShortcutModal');
+        const addBtn = document.getElementById('addShortcutBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const urlInput = document.getElementById('shortcutUrl');
+        const titleInput = document.getElementById('shortcutTitle');
+
+        addBtn.addEventListener('click', function() {
+            modal.style.display = 'flex';
+            urlInput.value = '';
+            titleInput.value = '';
+            urlInput.focus();
+        });
+
+        cancelBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        saveBtn.addEventListener('click', function() {
+            const url = urlInput.value.trim();
+            let title = titleInput.value.trim();
+
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            // Validate URL format
+            try {
+                new URL(url.startsWith('http') ? url : 'https://' + url);
+            } catch {
+                alert('Please enter a valid URL');
+                return;
+            }
+
+            // If no title provided, try to extract from URL
+            if (!title) {
+                try {
+                    const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+                    title = urlObj.hostname.replace('www.', '');
+                } catch {
+                    title = 'Untitled';
+                }
+            }
+
+            // Send to Android to save
+            const finalUrl = url.startsWith('http') ? url : 'https://' + url;
+            window.location.href = 'nira://add-shortcut?url=' + encodeURIComponent(finalUrl) + '&title=' + encodeURIComponent(title);
+            
+            modal.style.display = 'none';
+            
+            // Reload shortcuts after a short delay
+            setTimeout(function() {
+                loadShortcuts();
+            }, 500);
+        });
+
         // Load shortcuts on page load
         loadShortcuts();
+        loadBookmarks();
 
-        // Reload shortcuts when page becomes visible
+        // Reload shortcuts and bookmarks when page becomes visible
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
                 loadShortcuts();
+                loadBookmarks();
             }
         });
     </script>

@@ -25,7 +25,7 @@ import com.prirai.android.nira.browser.BrowsingMode
 import com.prirai.android.nira.browser.BrowsingModeManager
 import com.prirai.android.nira.browser.DefaultBrowsingModeManager
 import com.prirai.android.nira.browser.SearchEngineList
-import com.prirai.android.nira.browser.home.HomeFragmentDirections
+// import com.prirai.android.nira.browser.home.HomeFragmentDirections // Removed - using BrowserFragment for homepage
 import com.prirai.android.nira.databinding.ActivityMainBinding
 import com.prirai.android.nira.ext.alreadyOnDestination
 import com.prirai.android.nira.ext.components
@@ -449,7 +449,7 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
             NavGraphDirections.actionGlobalBrowser(customTabSessionId)
 
         BrowserDirection.FromHome ->
-            HomeFragmentDirections.actionGlobalBrowser(customTabSessionId)
+            NavGraphDirections.actionGlobalBrowser(customTabSessionId)
 
         BrowserDirection.FromSearchDialog ->
             SearchDialogFragmentDirections.actionGlobalBrowser(customTabSessionId)

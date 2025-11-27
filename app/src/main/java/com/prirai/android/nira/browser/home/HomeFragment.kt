@@ -33,6 +33,7 @@ import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.prirai.android.nira.BrowserActivity
+import com.prirai.android.nira.NavGraphDirections
 import com.prirai.android.nira.R
 import com.prirai.android.nira.addons.AddonsActivity
 import com.prirai.android.nira.browser.BrowsingMode
@@ -74,8 +75,8 @@ import mozilla.components.ui.widgets.behavior.ViewPosition as OldToolbarPosition
 class HomeFragment : Fragment() {
     private var database: ShortcutDatabase? = null
 
-    private val args by navArgs<HomeFragmentArgs>()
-    private lateinit var bundleArgs: Bundle
+    // private val args by navArgs<HomeFragmentArgs>() // Removed - HomeFragment no longer used
+    // private lateinit var bundleArgs: Bundle // Removed - HomeFragment no longer used
 
     private val browsingModeManager get() = (activity as BrowserActivity).browsingModeManager
 
@@ -93,7 +94,7 @@ class HomeFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        bundleArgs = args.toBundle()
+        // bundleArgs = args.toBundle() // Removed - HomeFragment no longer used
     }
 
     @Suppress("LongMethod")
@@ -449,9 +450,10 @@ class HomeFragment : Fragment() {
 
         updateTabCounter(components.store.state)
 
-        if (bundleArgs.getBoolean(FOCUS_ON_ADDRESS_BAR)) {
-            navigateToSearch()
-        }
+        // HomeFragment no longer used - commenting out bundleArgs
+        // if (bundleArgs.getBoolean(FOCUS_ON_ADDRESS_BAR)) {
+        //     navigateToSearch()
+        // }
     }
 
     private fun observeSearchEngineChanges() {
@@ -477,17 +479,17 @@ class HomeFragment : Fragment() {
         super.onDestroyView()
 
         appBarLayout = null
-        bundleArgs.clear()
+        // bundleArgs.clear() // HomeFragment no longer used
         requireActivity().window.clearFlags(FLAG_SECURE)
     }
 
     private fun navigateToSearch() {
-        val directions =
-            HomeFragmentDirections.actionGlobalSearchDialog(
-                sessionId = null
-            )
-
-        nav(R.id.homeFragment, directions, null)
+        // HomeFragment no longer used - using about:homepage instead
+        // Navigation now handled through BrowserFragment
+        val directions = NavGraphDirections.actionGlobalSearchDialog(
+            sessionId = null
+        )
+        nav(R.id.browserFragment, directions, null)
     }
 
     @SuppressWarnings("ComplexMethod", "LongMethod")

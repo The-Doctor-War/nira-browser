@@ -6,7 +6,7 @@ import android.net.Uri
 import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavController
 import com.prirai.android.nira.addons.AddonsActivity
-import com.prirai.android.nira.browser.home.HomeFragmentDirections
+// import com.prirai.android.nira.browser.home.HomeFragmentDirections // Removed - using BrowserFragment for homepage
 import com.prirai.android.nira.ext.components
 import com.prirai.android.nira.preferences.UserPreferences
 import kotlinx.coroutines.CoroutineScope
@@ -83,6 +83,66 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
                     }
                 }
             }
+            uri.startsWith("nira://delete-shortcut?") -> {
+                // Parse URL parameter
+                val params = android.net.Uri.parse(uri)
+                val shortcutId = params.getQueryParameter("id")?.toIntOrNull()
+                
+                if (shortcutId != null) {
+                    // Delete shortcut from database
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        try {
+                            val database = androidx.room.Room.databaseBuilder(
+                                context,
+                                com.prirai.android.nira.browser.shortcuts.ShortcutDatabase::class.java,
+                                "shortcut-database"
+                            ).build()
+                            
+                            val shortcutDao = database.shortcutDao()
+                            val shortcut = shortcutDao.loadAllByIds(intArrayOf(shortcutId)).firstOrNull()
+                            if (shortcut != null) {
+                                shortcutDao.delete(shortcut)
+                            }
+                            database.close()
+                            
+                            // Reload the page to reflect changes
+                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                                context.components.sessionUseCases.reload()
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+            uri.startsWith("nira://add-shortcut?") -> {
+                // Parse URL parameters
+                val params = android.net.Uri.parse(uri)
+                val url = params.getQueryParameter("url")
+                val title = params.getQueryParameter("title")
+                
+                if (url != null && title != null) {
+                    // Save shortcut to database
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        try {
+                            val database = androidx.room.Room.databaseBuilder(
+                                context,
+                                com.prirai.android.nira.browser.shortcuts.ShortcutDatabase::class.java,
+                                "shortcut-database"
+                            ).build()
+                            
+                            val entity = com.prirai.android.nira.browser.shortcuts.ShortcutEntity(
+                                url = url,
+                                title = title
+                            )
+                            database.shortcutDao().insertAll(entity)
+                            database.close()
+                        } catch (e: Exception) {
+                            // Ignore errors
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -94,10 +154,10 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
         val riskLevel = getErrorCategory(errorType)
 
         if (uri == "about:homepage") {
-            /* Load HTML-based homepage instead of navigating to HomeFragment
+            /* Load HTML-based homepage with injected data
             * This provides consistent toolbar behavior across all pages
             */
-            return RequestInterceptor.ErrorResponse("resource://android/assets/homepage.html")
+            return RequestInterceptor.ErrorResponse(generateHomepageWithData())
         }
 
         val errorPageUri = ErrorPages.createUrlEncodedErrorPage(
@@ -108,6 +168,63 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
         )
 
         return RequestInterceptor.ErrorResponse(errorPageUri)
+    }
+    
+    private fun generateHomepageWithData(): String {
+        val shortcutsJson = getShortcutsJson()
+        val bookmarksJson = getBookmarksJson()
+        
+        // Read the homepage HTML template
+        val htmlTemplate = try {
+            context.assets.open("homepage.html").bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            return "resource://android/assets/homepage.html"
+        }
+        
+        // Inject data by replacing the script section
+        // Use JSON.parse to avoid escaping issues with quotes
+        val injectedScript = """
+            <script>
+                // Injected data from Android
+                window.NiraShortcuts = {
+                    getShortcuts: function() {
+                        return JSON.stringify($shortcutsJson);
+                    }
+                };
+                
+                window.NiraBookmarks = {
+                    getBookmarks: function() {
+                        return JSON.stringify($bookmarksJson);
+                    }
+                };
+            </script>
+        """.trimIndent()
+        
+        // Insert the injected script before the existing script tag
+        val modifiedHtml = htmlTemplate.replace("<script>", "$injectedScript\n    <script>")
+        
+        return "data:text/html;charset=utf-8;base64," + android.util.Base64.encodeToString(
+            modifiedHtml.toByteArray(),
+            android.util.Base64.NO_WRAP
+        )
+    }
+    
+    private fun getShortcutsJson(): String {
+        return try {
+            val interface_ = com.prirai.android.nira.browser.home.HomepageJavaScriptInterface(context)
+            interface_.getShortcuts()
+        } catch (e: Exception) {
+            "[]"
+        }
+    }
+    
+    private fun getBookmarksJson(): String {
+        return try {
+            val interface_ = com.prirai.android.nira.browser.home.HomepageJavaScriptInterface(context)
+            interface_.getBookmarks()
+        } catch (e: Exception) {
+            "[]"
+        }
     }
 
     private fun interceptXpiUrl(
@@ -179,6 +296,14 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
 
 
     private fun generateHomepageHtml(): String {
+        // Load shortcuts from database
+        val shortcutsJson = try {
+            val interface_ = com.prirai.android.nira.browser.home.HomepageJavaScriptInterface(context)
+            interface_.getShortcuts()
+        } catch (e: Exception) {
+            "[]"
+        }
+        
         return """
             <!DOCTYPE html>
             <html>
@@ -421,12 +546,92 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
                         window.location.href = 'https://www.google.com';
                     }
                     
+                    function deleteShortcut(id) {
+                        if (confirm('Delete this shortcut?')) {
+                            window.location.href = 'nira://delete-shortcut?id=' + id;
+                        }
+                    }
+                    
                     function openTabs() {
                         // This would open tabs tray
                     }
                     
                     function openMenu() {
                         // This would open menu
+                    }
+                    
+                    // Shortcuts data injected from Android
+                    const shortcutsData = $shortcutsJson;
+                    
+                    // Load shortcuts on page load
+                    window.addEventListener('DOMContentLoaded', function() {
+                        loadShortcuts();
+                    });
+                    
+                    function loadShortcuts() {
+                        try {
+                            // Use injected shortcuts data
+                            const shortcuts = shortcutsData;
+                            const grid = document.querySelector('.shortcuts-grid');
+                            
+                            // Clear existing shortcuts except the add button
+                            grid.innerHTML = '';
+                            
+                            // Add each shortcut
+                            shortcuts.forEach(function(shortcut) {
+                                const item = document.createElement('div');
+                                item.className = 'shortcut-item';
+                                item.style.position = 'relative';
+                                
+                                // Create delete button (X)
+                                const deleteBtn = document.createElement('button');
+                                deleteBtn.innerHTML = '✕';
+                                deleteBtn.className = 'delete-shortcut-btn';
+                                deleteBtn.style.cssText = 'position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; border-radius: 50%; background: #ff4444; color: white; border: none; font-size: 12px; cursor: pointer; display: none; z-index: 10;';
+                                deleteBtn.onclick = function(e) {
+                                    e.stopPropagation();
+                                    deleteShortcut(shortcut.uid);
+                                };
+                                
+                                // Show delete button on hover
+                                item.onmouseenter = function() {
+                                    deleteBtn.style.display = 'block';
+                                };
+                                item.onmouseleave = function() {
+                                    deleteBtn.style.display = 'none';
+                                };
+                                
+                                // Create icon
+                                const icon = document.createElement('div');
+                                icon.style.cssText = 'width: 48px; height: 48px; background: #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;';
+                                icon.textContent = (shortcut.title || shortcut.url || '?').charAt(0).toUpperCase();
+                                
+                                // Create title
+                                const title = document.createElement('div');
+                                title.style.cssText = 'font-size: 10px; text-align: center; margin-top: 4px; color: #333;';
+                                title.textContent = shortcut.title || shortcut.url || 'Shortcut';
+                                
+                                // Click handler for navigation
+                                item.onclick = function() {
+                                    window.location.href = shortcut.url;
+                                };
+                                
+                                item.appendChild(deleteBtn);
+                                item.appendChild(icon);
+                                item.appendChild(title);
+                                grid.appendChild(item);
+                            });
+                            
+                            // Add the "Add" button at the end
+                            const addItem = document.createElement('div');
+                            addItem.className = 'shortcut-item';
+                            addItem.onclick = addShortcut;
+                            addItem.innerHTML = '<div style="width: 48px; height: 48px; background: #ddd; border: 2px dashed #999; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">+</div><div style="font-size: 10px; text-align: center; margin-top: 4px; color: #666;">Add</div>';
+                            grid.appendChild(addItem);
+                            
+                        } catch (e) {
+                            console.error('Error loading shortcuts:', e);
+                        }
                     }
                 </script>
             </body>

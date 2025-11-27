@@ -26,7 +26,7 @@ import com.prirai.android.nira.addons.WebExtensionPromptFeature
 import com.prirai.android.nira.browser.BrowsingMode
 import com.prirai.android.nira.settings.HomepageChoice
 import com.prirai.android.nira.browser.SwipeGestureLayout
-import com.prirai.android.nira.browser.home.HomeFragmentDirections
+// import com.prirai.android.nira.browser.home.HomeFragmentDirections // Removed - using BrowserFragment for homepage
 import com.prirai.android.nira.components.StoreProvider
 import com.prirai.android.nira.components.toolbar.BrowserFragmentStore
 import com.prirai.android.nira.components.toolbar.BrowserFragmentState
@@ -661,15 +661,12 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                         if (tabs.isEmpty() || store.state.selectedTabId == null) {
                             when (UserPreferences(requireContext()).homepageType) {
                                 HomepageChoice.VIEW.ordinal -> {
+                                    // Load about:homepage in BrowserFragment (HTML homepage)
                                     components.tabsUseCases.addTab.invoke(
                                         "about:homepage",
                                         selectTab = true
                                     )
-                                    navController.navigate(
-                                        HomeFragmentDirections.actionGlobalHome(
-                                            focusOnAddressBar = false
-                                        )
-                                    )
+                                    // Navigation not needed - tab already created and selected
                                 }
 
                                 HomepageChoice.BLANK_PAGE.ordinal -> {

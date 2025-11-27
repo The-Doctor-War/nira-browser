@@ -478,7 +478,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
 
             com.prirai.android.nira.components.toolbar.modern.ModernToolbarManager.NavigationAction.SEARCH -> {
                 // Navigate to search dialog
-                val directions = com.prirai.android.nira.browser.home.HomeFragmentDirections.actionGlobalSearchDialog(
+                val directions = NavGraphDirections.actionGlobalSearchDialog(
                     sessionId = null
                 )
                 nav(R.id.browserFragment, directions)

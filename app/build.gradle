@@ -164,6 +164,7 @@ dependencies {
     implementation "org.mozilla.components:feature-pwa:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-prompts:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-sitepermissions:$mozComponentsVersion"
+    implementation "org.mozilla.components:feature-webauthn:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-webcompat:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-webnotifications:$mozComponentsVersion"
     implementation "org.mozilla.components:feature-addons:$mozComponentsVersion"
@@ -193,6 +194,9 @@ dependencies {
     implementation "org.mozilla.components:lib-state:$mozComponentsVersion"
     implementation "org.mozilla.components:lib-publicsuffixlist:$mozComponentsVersion"
     implementation "org.mozilla.components:lib-fetch-httpurlconnection:$mozComponentsVersion"
+
+    // Google Play Services for WebAuthn/Passkeys support
+    implementation 'com.google.android.gms:play-services-fido:21.2.0'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.3.0'

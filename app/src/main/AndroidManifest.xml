@@ -35,6 +35,11 @@
     android:supportsRtl="true"
     android:theme="@style/AppThemeNotActionBar">
 
+    <!-- WebAuthn/FIDO2 asset links metadata -->
+    <meta-data
+        android:name="asset_statements"
+        android:resource="@string/asset_statements" />
+
     <activity android:name=".BrowserActivity"
         android:theme="@style/SplashTheme"
         android:launchMode="singleTask"

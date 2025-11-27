@@ -531,7 +531,14 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
 
                     lastTabIds = currentTabIds
 
-                    modernToolbarManager?.updateTabs(state.tabs, state.selectedTabId)
+                    // Filter tabs by browsing mode before passing to toolbar
+                    val activity = requireActivity() as? BrowserActivity
+                    val isPrivateMode = activity?.browsingModeManager?.mode?.isPrivate ?: false
+                    val filteredTabs = state.tabs.filter { tab ->
+                        (tab.content.private == isPrivateMode)
+                    }
+                    
+                    modernToolbarManager?.updateTabs(filteredTabs, state.selectedTabId)
 
                     // Update navigation state
                     val selectedTab = state.tabs.find { it.id == state.selectedTabId }

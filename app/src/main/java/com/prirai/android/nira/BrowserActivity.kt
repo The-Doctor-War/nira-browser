@@ -455,12 +455,14 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
         forceSearch: Boolean,
         flags: EngineSession.LoadUrlFlags = EngineSession.LoadUrlFlags.none()
     ) {
+        val isPrivateMode = browsingModeManager.mode.isPrivate
+        
         if ((!forceSearch && searchTermOrURL.isUrl()) || engine == null) {
             if (newTab) {
                 components.tabsUseCases.addTab.invoke(
                     searchTermOrURL.toNormalizedUrl(),
                     flags = flags,
-                    private = true,
+                    private = isPrivateMode,
                 )
             } else {
                 components.sessionUseCases.loadUrl.invoke(searchTermOrURL.toNormalizedUrl(), flags)
@@ -471,7 +473,7 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
                     .invoke(
                         searchTermOrURL,
                         SessionState.Source.Internal.UserEntered,
-                        true,
+                        isPrivateMode,
                         searchEngine = engine
                     )
             } else {

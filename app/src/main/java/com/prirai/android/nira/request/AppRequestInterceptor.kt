@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mozilla.components.browser.errorpages.ErrorPages
 import mozilla.components.browser.errorpages.ErrorType
+import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.request.RequestInterceptor
 import mozilla.components.concept.engine.request.RequestInterceptor.InterceptionResponse
@@ -174,6 +175,15 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
         val shortcutsJson = getShortcutsJson()
         val bookmarksJson = getBookmarksJson()
         
+        // Detect private browsing mode
+        val isPrivateMode = try {
+            val components = context.components
+            val selectedTab = components.store.state.selectedTab
+            selectedTab?.content?.private ?: false
+        } catch (e: Exception) {
+            false
+        }
+        
         // Read the homepage HTML template
         val htmlTemplate = try {
             context.assets.open("homepage.html").bufferedReader().use { it.readText() }
@@ -197,6 +207,14 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
                         return JSON.stringify($bookmarksJson);
                     }
                 };
+                
+                // Private browsing mode flag
+                window.NiraPrivateMode = $isPrivateMode;
+                
+                // Apply private mode styling if needed
+                if (window.NiraPrivateMode) {
+                    document.documentElement.classList.add('private-mode');
+                }
             </script>
         """.trimIndent()
         

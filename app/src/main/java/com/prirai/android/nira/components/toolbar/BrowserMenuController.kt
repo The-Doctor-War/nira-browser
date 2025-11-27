@@ -159,6 +159,9 @@ class DefaultBrowserToolbarMenuController(
             }
 
             is ToolbarMenu.Item.NewPrivateTab -> {
+                // Switch to private mode first
+                activity.browsingModeManager.mode = com.prirai.android.nira.browser.BrowsingMode.Private
+                
                 activity.components.tabsUseCases.addTab.invoke(
                     "about:homepage",
                     selectTab = true, private = true

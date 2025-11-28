@@ -329,6 +329,9 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                 },
                 onNavigationAction = { action ->
                     handleNavigationAction(action)
+                },
+                onNewTabInIsland = { islandId ->
+                    handleNewTabInIsland(islandId)
                 })
 
             // Hide old separate toolbar components for both top and bottom positions when using modern toolbar
@@ -498,6 +501,26 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                 } catch (e: Exception) {
                 }
             }
+        }
+    }
+
+    private fun handleNewTabInIsland(islandId: String) {
+        // Create a new tab and automatically add it to the specified island
+        val store = requireContext().components.store
+        val state = store.state
+        val selectedTab = state.tabs.find { it.id == state.selectedTabId }
+        
+        // Create new tab with current tab as parent to enable auto-grouping
+        val newTabId = requireContext().components.tabsUseCases.addTab.invoke(
+            url = "about:homepage",
+            selectTab = true,
+            parentId = selectedTab?.id
+        )
+        
+        // Manually add to island since we're creating from plus button
+        if (newTabId != null) {
+            val islandManager = com.prirai.android.nira.components.toolbar.modern.TabIslandManager.getInstance(requireContext())
+            islandManager.addTabToIsland(newTabId, islandId)
         }
     }
 

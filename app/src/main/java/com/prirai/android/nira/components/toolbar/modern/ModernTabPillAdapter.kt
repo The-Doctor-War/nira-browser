@@ -33,7 +33,9 @@ class ModernTabPillAdapter(
     private var onTabClick: (String) -> Unit,
     private var onTabClose: (String) -> Unit,
     private var onIslandHeaderClick: (String) -> Unit = {},
-    private var onIslandLongPress: (String) -> Unit = {}
+    private var onIslandLongPress: (String) -> Unit = {},
+    private var onIslandPlusClick: (String) -> Unit = {},
+    private var onTabUngroupFromIsland: ((String, String) -> Unit)? = null
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private var displayItems = mutableListOf<TabPillItem>()
@@ -255,12 +257,16 @@ class ModernTabPillAdapter(
         onTabClick: (String) -> Unit,
         onTabClose: (String) -> Unit,
         onIslandHeaderClick: (String) -> Unit = {},
-        onIslandLongPress: (String) -> Unit = {}
+        onIslandLongPress: (String) -> Unit = {},
+        onIslandPlusClick: (String) -> Unit = {},
+        onTabUngroupFromIsland: ((String, String) -> Unit)? = null
     ) {
         this.onTabClick = onTabClick
         this.onTabClose = onTabClose
         this.onIslandHeaderClick = onIslandHeaderClick
         this.onIslandLongPress = onIslandLongPress
+        this.onIslandPlusClick = onIslandPlusClick
+        this.onTabUngroupFromIsland = onTabUngroupFromIsland
     }
 
     // ViewHolder for regular tabs
@@ -551,6 +557,7 @@ class ModernTabPillAdapter(
         private val nameText: TextView = itemView.findViewById(R.id.islandName)
         private val colorIndicator: View = itemView.findViewById(R.id.islandColorIndicator)
         private val collapseButton: ImageView = itemView.findViewById(R.id.islandCollapseButton)
+        private val plusButton: ImageView = itemView.findViewById(R.id.islandPlusButton)
         private val headerSection: ViewGroup = itemView.findViewById(R.id.islandHeaderSection)
         private val tabsContainer: ViewGroup = itemView.findViewById(R.id.islandTabsContainer)
         private val groupCard: CardView = itemView.findViewById(R.id.islandGroupCard)
@@ -574,6 +581,13 @@ class ModernTabPillAdapter(
                 onIslandLongPress(island.id)
                 itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
                 true
+            }
+
+            // Setup plus button to add new tab to island
+            plusButton.setOnClickListener {
+                onIslandPlusClick(island.id)
+                animatePlusButtonClick()
+                itemView.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
             }
 
             // Clear previous tabs
@@ -751,8 +765,8 @@ class ModernTabPillAdapter(
                 itemView.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
             }
 
-            // Add swipe-up gesture for delete
-            setupSwipeToDelete(tabView, tabContent, tab.id)
+            // Add swipe-up gesture for delete OR long-press drag to ungroup
+            setupTabGestures(tabView, tabContent, tab.id, island.id)
 
             return tabView
         }
@@ -789,10 +803,13 @@ class ModernTabPillAdapter(
             }
         }
 
-        private fun setupSwipeToDelete(tabView: View, tabContent: ViewGroup, tabId: String) {
+        private fun setupTabGestures(tabView: View, tabContent: ViewGroup, tabId: String, islandId: String) {
             var startY = 0f
             var startX = 0f
             var isDragging = false
+            var isHorizontalDrag = false
+            var longPressTimer: android.os.Handler? = null
+            var isLongPressTriggered = false
 
             tabContent.setOnTouchListener { v, event ->
                 when (event.action) {
@@ -800,59 +817,141 @@ class ModernTabPillAdapter(
                         startY = event.rawY
                         startX = event.rawX
                         isDragging = false
+                        isHorizontalDrag = false
+                        isLongPressTriggered = false
+                        
+                        // Start long press timer for drag-out
+                        longPressTimer = android.os.Handler(android.os.Looper.getMainLooper())
+                        longPressTimer?.postDelayed({
+                            if (!isDragging && !isHorizontalDrag) {
+                                isLongPressTriggered = true
+                                v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+                                // Visual feedback for drag-out mode
+                                tabView.animate()
+                                    .scaleX(1.1f)
+                                    .scaleY(1.1f)
+                                    .alpha(0.8f)
+                                    .setDuration(150)
+                                    .start()
+                            }
+                        }, 500)
                         false
                     }
 
                     android.view.MotionEvent.ACTION_MOVE -> {
                         val deltaY = startY - event.rawY
-                        val deltaX = Math.abs(event.rawX - startX)
+                        val deltaX = event.rawX - startX
 
-                        // Only start drag if moving upward and not too much horizontal movement
-                        if (deltaY > 20 && deltaX < 50 && !isDragging) {
-                            isDragging = true
-                            v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+                        // Determine gesture type
+                        if (!isDragging && !isHorizontalDrag) {
+                            if (Math.abs(deltaX) > 30 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                                // Horizontal drag for ungroup
+                                isHorizontalDrag = true
+                                longPressTimer?.removeCallbacksAndMessages(null)
+                            } else if (deltaY > 20 && Math.abs(deltaX) < 50) {
+                                // Vertical swipe up for delete
+                                isDragging = true
+                                longPressTimer?.removeCallbacksAndMessages(null)
+                                v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+                            }
                         }
 
-                        if (isDragging) {
-                            // Visual feedback - move the tab up
-                            tabView.translationY = -deltaY
-                            tabView.alpha = 1f - (deltaY / 200f).coerceIn(0f, 0.5f)
-                            true
-                        } else {
-                            false
+                        when {
+                            isDragging -> {
+                                // Swipe up to delete
+                                tabView.translationY = -deltaY
+                                tabView.alpha = 1f - (deltaY / 200f).coerceIn(0f, 0.5f)
+                                tabView.rotation = -(deltaY / 50f).coerceIn(-15f, 15f)
+                                tabView.scaleX = 1f - (deltaY / 400f).coerceIn(0f, 0.3f)
+                                tabView.scaleY = 1f - (deltaY / 400f).coerceIn(0f, 0.3f)
+                                true
+                            }
+                            isHorizontalDrag && isLongPressTriggered -> {
+                                // Horizontal drag to ungroup
+                                tabView.translationX = deltaX
+                                tabView.alpha = 1f - (Math.abs(deltaX) / 300f).coerceIn(0f, 0.4f)
+                                true
+                            }
+                            else -> false
                         }
                     }
 
                     android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                        if (isDragging) {
-                            val deltaY = startY - event.rawY
-
-                            if (deltaY > 100) {
-                                // Threshold met - delete the tab
-                                tabView.animate()
-                                    .translationY(-300f)
-                                    .alpha(0f)
-                                    .setDuration(200)
-                                    .withEndAction {
-                                        onTabClose(tabId)
-                                    }
-                                    .start()
-                            } else {
-                                // Threshold not met - spring back
-                                resetTabVisualState(tabView)
+                        longPressTimer?.removeCallbacksAndMessages(null)
+                        
+                        when {
+                            isDragging -> {
+                                val deltaY = startY - event.rawY
+                                if (deltaY > 100) {
+                                    // Delete with animation
+                                    animateTabDelete(tabView, tabId)
+                                } else {
+                                    resetTabVisualState(tabView)
+                                }
+                                isDragging = false
+                                true
                             }
-                            isDragging = false
-                            true
-                        } else {
-                            // Not dragging, let click handler work
-                            v.performClick()
-                            false
+                            isHorizontalDrag && isLongPressTriggered -> {
+                                val deltaX = event.rawX - startX
+                                if (Math.abs(deltaX) > 100) {
+                                    // Ungroup with animation
+                                    animateTabUngroup(tabView, tabId, islandId)
+                                } else {
+                                    resetTabVisualState(tabView)
+                                }
+                                isHorizontalDrag = false
+                                isLongPressTriggered = false
+                                true
+                            }
+                            else -> {
+                                v.performClick()
+                                false
+                            }
                         }
                     }
 
                     else -> false
                 }
             }
+        }
+
+        private fun animateTabUngroup(tabView: View, tabId: String, islandId: String) {
+            // Animate tab flying out to the side
+            tabView.animate()
+                .translationX(if (tabView.translationX > 0) 400f else -400f)
+                .alpha(0f)
+                .rotation(if (tabView.translationX > 0) 15f else -15f)
+                .setDuration(250)
+                .withEndAction {
+                    // Notify ungroup via callback
+                    onTabUngroupFromIsland?.invoke(tabId, islandId)
+                }
+                .start()
+        }
+
+        private fun animateTabDelete(tabView: View, tabId: String) {
+            // Create a breaking apart effect with rotation and fading
+            tabView.animate()
+                .translationY(-400f)
+                .alpha(0f)
+                .rotation(-30f)
+                .scaleX(0.5f)
+                .scaleY(0.5f)
+                .setDuration(250)
+                .setInterpolator(android.view.animation.AccelerateInterpolator())
+                .withEndAction {
+                    onTabClose(tabId)
+                }
+                .start()
+
+            // Add a subtle "poof" effect by rapidly scaling
+            tabView.postDelayed({
+                tabView.animate()
+                    .scaleX(0.2f)
+                    .scaleY(0.2f)
+                    .setDuration(100)
+                    .start()
+            }, 150)
         }
 
         private fun resetTabVisualState(tabView: View) {
@@ -881,6 +980,21 @@ class ModernTabPillAdapter(
                 .setDuration(100)
                 .withEndAction {
                     headerSection.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(100)
+                        .start()
+                }
+                .start()
+        }
+
+        private fun animatePlusButtonClick() {
+            plusButton.animate()
+                .scaleX(1.3f)
+                .scaleY(1.3f)
+                .setDuration(100)
+                .withEndAction {
+                    plusButton.animate()
                         .scaleX(1f)
                         .scaleY(1f)
                         .setDuration(100)

@@ -13,14 +13,24 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
+import androidx.core.content.ContextCompat
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.textview.MaterialTextView
 import mozilla.components.browser.state.selector.findCustomTab
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.toolbar.BrowserToolbar
+import mozilla.components.concept.engine.EngineSession
 import mozilla.components.feature.customtabs.CustomTabWindowFeature
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import com.prirai.android.nira.BrowserActivity
 import com.prirai.android.nira.R
+import com.prirai.android.nira.components.FindInPageComponent
 import com.prirai.android.nira.ext.components
 
 /**
@@ -38,6 +48,9 @@ class ExternalAppBrowserFragment : CustomTabBrowserFragment() {
     private var customTabMenuButton: ImageButton? = null
     private var customTabCloseButton: ImageButton? = null
     
+    // Find in Page component
+    private var findInPageComponent: FindInPageComponent? = null
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         // Set customTabSessionId from arguments before calling super
         customTabSessionId = arguments?.getString("activeSessionId")
@@ -51,6 +64,28 @@ class ExternalAppBrowserFragment : CustomTabBrowserFragment() {
         
         // Add custom minimal header
         addCustomHeader(view, tab)
+        
+        // Set up custom Find in Page
+        setupCustomFindInPage(view)
+    }
+    
+    private fun setupCustomFindInPage(view: View) {
+        val sessionId = customTabSessionId ?: return
+        val rootLayout = view.findViewById<ViewGroup>(R.id.gestureLayout) ?: return
+        
+        // Create and attach the Find in Page component
+        findInPageComponent = FindInPageComponent(
+            context = requireContext(),
+            store = requireContext().components.store,
+            sessionId = sessionId,
+            lifecycleOwner = viewLifecycleOwner,
+            isCustomTab = true
+        )
+        findInPageComponent?.attach(rootLayout)
+    }
+    
+    private fun showFindInPage() {
+        findInPageComponent?.show()
     }
     
     private fun addCustomHeader(view: View, tab: SessionState) {
@@ -71,8 +106,10 @@ class ExternalAppBrowserFragment : CustomTabBrowserFragment() {
         headerView.layoutParams = layoutParams
         
         // Add header at the top with proper z-index
+        // Insert before the last child (which is usually the stub or other bottom elements)
         headerView.elevation = 8f
-        browserLayout.addView(headerView, browserLayout.childCount)
+        val insertIndex = if (browserLayout.childCount > 0) 0 else 0
+        browserLayout.addView(headerView, insertIndex)
         
         // Initialize header views
         customTabHeader = headerView.findViewById(R.id.customTabHeader)
@@ -128,7 +165,7 @@ class ExternalAppBrowserFragment : CustomTabBrowserFragment() {
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.menu_find_in_page -> {
-                    // Handle find in page
+                    showFindInPage()
                     true
                 }
                 R.id.menu_share -> {
@@ -185,6 +222,11 @@ class ExternalAppBrowserFragment : CustomTabBrowserFragment() {
     }
 
     override fun onBackPressed(): Boolean {
-        return super.onBackPressed()
+        return findInPageComponent?.onBackPressed() ?: false || super.onBackPressed()
+    }
+    
+    override fun onDestroyView() {
+        findInPageComponent?.destroy()
+        super.onDestroyView()
     }
 }

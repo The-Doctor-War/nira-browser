@@ -23,19 +23,27 @@ class IntentReceiverActivity : Activity() {
             intent.flags = intent.flags and Intent.FLAG_ACTIVITY_CLEAR_TASK.inv()
             intent.flags = intent.flags and Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS.inv()
 
-            // Check if this is a custom tabs intent
-            val isCustomTab = safeIntent.hasExtra("android.support.customtabs.extra.SESSION") ||
-                             safeIntent.hasExtra("androidx.browser.customtabs.extra.SESSION")
-
-            // Process the intent to create a tab session
-            val processor = TabIntentProcessor(components.tabsUseCases, components.searchUseCases.newTabSearch, isPrivate = false)
-            processor.process(intent)
+            // Check if this is a custom tabs intent (external app link)
+            // For external VIEW intents, open in custom tabs for faster loading
+            val hasCustomTabExtra = safeIntent.hasExtra("android.support.customtabs.extra.SESSION") ||
+                                   safeIntent.hasExtra("androidx.browser.customtabs.extra.SESSION")
+            
+            val isCustomTab = intent.action == Intent.ACTION_VIEW && 
+                             intent.data != null &&
+                             (hasCustomTabExtra ||
+                              (intent.categories?.contains(Intent.CATEGORY_BROWSABLE) == true ||
+                               intent.categories?.contains(Intent.CATEGORY_DEFAULT) == true)) &&
+                             // Check if it has the OPEN_TO_BROWSER extra (internal navigation)
+                             !intent.hasExtra(BrowserActivity.OPEN_TO_BROWSER)
 
             val activityClass = if (isCustomTab) {
-                // For custom tabs, use the ExternalAppBrowserActivity
+                // For external links, use the ExternalAppBrowserActivity (custom tabs)
                 ExternalAppBrowserActivity::class
             } else {
                 // For regular intents, use the normal BrowserActivity
+                // Process the intent to create a tab session
+                val processor = TabIntentProcessor(components.tabsUseCases, components.searchUseCases.newTabSearch, isPrivate = false)
+                processor.process(intent)
                 BrowserActivity::class
             }
 

@@ -52,10 +52,7 @@ abstract class CustomTabBrowserFragment : Fragment() {
         val sessionId = customTabSessionId ?: return
         val tab = requireContext().components.store.state.findCustomTab(sessionId) ?: return
         
-        // Get the engine view
         engineView = binding.engineView
-        
-        // Initialize UI
         onInitializeUI(binding.root, tab)
         
         // Set up session feature to connect engine view to tab

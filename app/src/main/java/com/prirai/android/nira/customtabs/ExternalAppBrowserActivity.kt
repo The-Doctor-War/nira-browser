@@ -20,27 +20,21 @@ import com.prirai.android.nira.ext.getIntentSessionId
  */
 open class ExternalAppBrowserActivity : BrowserActivity() {
 
-    // Override to prevent navigation to browserFragment on cold start
     override fun navigateToBrowserOnColdStart() {
-        // Do nothing - we handle navigation ourselves
+        // Do nothing - custom tabs handle their own navigation
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Process the intent to create a custom tab session BEFORE calling super
+        // Create a custom tab session from the intent
         val safeIntent = mozilla.components.support.utils.SafeIntent(intent)
         val url = safeIntent.dataString
         
         if (url != null) {
-            // Create a custom tab (not a regular tab)
             val customTab = createCustomTab(
                 url = url,
                 source = SessionState.Source.Internal.CustomTab
             )
-            
-            // Add the custom tab to the store
             components.store.dispatch(CustomTabListAction.AddCustomTabAction(customTab))
-            
-            // Store the custom tab ID in the intent for later retrieval
             intent.putExtra("CUSTOM_TAB_ID", customTab.id)
         }
         
@@ -50,17 +44,12 @@ open class ExternalAppBrowserActivity : BrowserActivity() {
         // Navigate to the external app browser fragment
         if (savedInstanceState == null) {
             val navHostFragment = supportFragmentManager.findFragmentById(R.id.container) as? NavHostFragment
-            
             navHostFragment?.let { host ->
-                // Get the custom tab ID we just created
                 val customTabId = intent.getStringExtra("CUSTOM_TAB_ID")
-                
-                // Create bundle with session ID
                 val bundle = Bundle().apply {
                     putString("activeSessionId", customTabId)
                     putString(EXTRA_SESSION_ID, customTabId)
                 }
-                
                 host.navController.navigate(R.id.externalAppBrowserFragment, bundle)
             }
         }

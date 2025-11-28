@@ -12,4 +12,6 @@
     <dimen name="tab_counter_box_width_height">24dp</dimen>
     <dimen name="home_fragment_top_toolbar_header_margin">60dp</dimen>
     <dimen name="tab_icon_size">48dp</dimen>
+    <dimen name="find_in_page_height">56dp</dimen>
+    <dimen name="find_in_page_margin">16dp</dimen>
 </resources>

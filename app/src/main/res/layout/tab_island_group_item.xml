@@ -8,6 +8,8 @@
     android:layout_marginHorizontal="4dp"
     android:clickable="false"
     android:focusable="false"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
     app:cardBackgroundColor="?android:attr/colorBackground"
@@ -17,6 +19,8 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:orientation="horizontal"
+        android:clipChildren="false"
+        android:clipToPadding="false"
     >
 
         <!-- Colored vertical pill indicator on the left edge -->
@@ -70,6 +74,16 @@
 
         </LinearLayout>
 
+        <!-- Container for tab pills (will be populated dynamically) -->
+        <LinearLayout
+            android:id="@+id/islandTabsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+        />
+
         <!-- Separator before plus button -->
         <View
             android:id="@+id/plusButtonSeparator"
@@ -93,14 +107,6 @@
             android:clickable="true"
             android:focusable="true"
             android:background="?android:attr/selectableItemBackground"
-        />
-
-        <!-- Container for tab pills (will be populated dynamically) -->
-        <LinearLayout
-            android:id="@+id/islandTabsContainer"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
         />
 
     </LinearLayout>

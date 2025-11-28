@@ -64,8 +64,9 @@ class EnhancedTabGroupView @JvmOverloads constructor(
         )
         adapter = tabAdapter
 
-        // Layout configuration
+        // Layout configuration - CRITICAL: Allow children to draw outside bounds
         clipToPadding = false
+        clipChildren = false
         overScrollMode = OVER_SCROLL_NEVER
         setPadding(4, 2, 4, 2)
 

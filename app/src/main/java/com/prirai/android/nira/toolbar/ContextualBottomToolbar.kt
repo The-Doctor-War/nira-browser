@@ -73,12 +73,24 @@ class ContextualBottomToolbar @JvmOverloads constructor(
         val userPrefs = context.getSharedPreferences("scw_preferences", Context.MODE_PRIVATE)
         val iconScale = userPrefs.getFloat("toolbar_icon_size", 1.0f)
         
+        val baseHeight = (48 * context.resources.displayMetrics.density).toInt()
+        val scaledHeight = (baseHeight * iconScale).toInt()
+        
+        val basePadding = (10 * context.resources.displayMetrics.density).toInt()
+        val scaledPadding = (basePadding / iconScale).toInt()
+        
         val buttons = listOf(backButton, forwardButton, shareButton, searchButton, newTabButton, menuButton)
         buttons.forEach { button ->
-            val basePadding = (10 * context.resources.displayMetrics.density).toInt()
-            val scaledPadding = (basePadding / iconScale).toInt()
+            val params = button.layoutParams
+            params.height = scaledHeight
+            button.layoutParams = params
             button.setPadding(scaledPadding, scaledPadding, scaledPadding, scaledPadding)
         }
+        
+        // Also update tab count button height
+        val tabCountParams = tabCountButton.layoutParams
+        tabCountParams.height = scaledHeight
+        tabCountButton.layoutParams = tabCountParams
     }
 
     private fun setupClickListeners() {
@@ -99,9 +111,6 @@ class ContextualBottomToolbar @JvmOverloads constructor(
         menuButton.setOnClickListener { listener?.onMenuClicked() }
     }
 
-    /**
-     * Update toolbar based on current browsing context
-     */
     fun updateForContext(
         tab: TabSessionState?,
         canGoBack: Boolean,
@@ -109,6 +118,14 @@ class ContextualBottomToolbar @JvmOverloads constructor(
         tabCount: Int,
         isHomepage: Boolean
     ) {
+        val userPrefs = context.getSharedPreferences("scw_preferences", Context.MODE_PRIVATE)
+        val showContextualToolbar = userPrefs.getBoolean("show_contextual_toolbar", true)
+        
+        if (!showContextualToolbar) {
+            this.visibility = View.GONE
+            return
+        }
+        
         when {
             isHomepage -> showHomepageContext(tabCount, canGoForward)
             canGoForward -> showFullNavigationContext(tabCount)
@@ -119,20 +136,14 @@ class ContextualBottomToolbar @JvmOverloads constructor(
         updateTabCount(tabCount)
     }
 
-    /**
-     * Homepage context: bookmarks, forward(enabled/disabled), search, tabs, menu
-     */
     private fun showHomepageContext(tabCount: Int, canGoForward: Boolean = false) {
-        // Always show the toolbar on homepage
         this.visibility = View.VISIBLE
         
-        // Show: bookmarks, forward(enabled/disabled), search, tabs, menu
         backButton.visibility = View.VISIBLE
         backButton.setImageResource(R.drawable.ic_baseline_bookmark)
         backButton.isEnabled = true
         backButton.alpha = 1.0f
         
-        // Set bookmark state flag - this is the key fix!
         isShowingBookmarkIcon = true
         
         forwardButton.visibility = View.VISIBLE
@@ -154,17 +165,12 @@ class ContextualBottomToolbar @JvmOverloads constructor(
         updateTabCount(tabCount)
     }
 
-    /**
-     * Website context: back, share, new tab, tabs, menu
-     */
     private fun showWebsiteContext(canGoBack: Boolean, tabCount: Int) {
-        // Show: back, share, new tab, tabs, menu
         backButton.visibility = View.VISIBLE
-        backButton.setImageResource(R.drawable.ic_ios_back) // Reset to back icon
+        backButton.setImageResource(R.drawable.ic_ios_back)
         backButton.isEnabled = canGoBack
         backButton.alpha = if (canGoBack) 1.0f else 0.4f
         
-        // Reset bookmark state flag
         isShowingBookmarkIcon = false
         
         forwardButton.visibility = View.GONE
@@ -185,21 +191,16 @@ class ContextualBottomToolbar @JvmOverloads constructor(
         updateTabCount(tabCount)
     }
 
-    /**
-     * Full navigation context: back, forward, new tab, tabs, menu
-     */
     private fun showFullNavigationContext(tabCount: Int) {
-        // Show: back, forward, new tab, tabs, menu
         backButton.visibility = View.VISIBLE
-        backButton.setImageResource(R.drawable.ic_ios_back) // Reset to back icon
+        backButton.setImageResource(R.drawable.ic_ios_back)
         backButton.isEnabled = true
         backButton.alpha = 1.0f
         
-        // Reset bookmark state flag
         isShowingBookmarkIcon = false
         
         forwardButton.visibility = View.VISIBLE
-        forwardButton.setImageResource(R.drawable.ic_ios_forward) // Reset to forward icon
+        forwardButton.setImageResource(R.drawable.ic_ios_forward)
         forwardButton.isEnabled = true
         forwardButton.alpha = 1.0f
         
@@ -217,17 +218,12 @@ class ContextualBottomToolbar @JvmOverloads constructor(
         updateTabCount(tabCount)
     }
 
-    /**
-     * Default/fallback context
-     */
     private fun showDefaultContext(tabCount: Int) {
-        // Show basic navigation
         backButton.visibility = View.VISIBLE
-        backButton.setImageResource(R.drawable.ic_ios_back) // Reset to back icon
+        backButton.setImageResource(R.drawable.ic_ios_back)
         backButton.isEnabled = true
         backButton.alpha = 1.0f
         
-        // Reset bookmark state flag
         isShowingBookmarkIcon = false
         
         forwardButton.visibility = View.GONE
@@ -246,17 +242,9 @@ class ContextualBottomToolbar @JvmOverloads constructor(
         updateTabCount(tabCount)
     }
 
-    /**
-     * Update tab count display
-     */
     private fun updateTabCount(count: Int) {
         tabCountText.text = if (count > 99) "99+" else count.toString()
-        
-        // Update content description for accessibility
-        tabCountButton.contentDescription = context.getString(
-            R.string.tabs_count_description, 
-            count
-        )
+        tabCountButton.contentDescription = context.getString(R.string.tabs_count_description, count)
     }
 
     /**

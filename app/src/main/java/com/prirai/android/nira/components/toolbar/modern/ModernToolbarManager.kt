@@ -178,6 +178,13 @@ class ModernToolbarManager(
     }
 
     private fun createModernContextualToolbar() {
+        // Check user preference - only create if enabled
+        val prefs = UserPreferences(container.context)
+        if (!prefs.showContextualToolbar) {
+            // Don't create the contextual toolbar if user has disabled it
+            return
+        }
+        
         // COMPLETE migration: Original theming + working functionality
         modernContextualToolbar =
             com.prirai.android.nira.toolbar.ContextualBottomToolbar(container.context).apply {

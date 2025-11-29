@@ -54,6 +54,7 @@ class UserPreferences(appContext: Context) : mozilla.components.support.ktx.andr
         set(_) { /* Always enabled, ignore sets */ }
     var stackFromBottom by booleanPreference(STACK_FROM_BOTTOM, false)
     var showTabsInGrid by booleanPreference(SHOW_TABS_IN_GRID, false)
+    var showContextualToolbar by booleanPreference(SHOW_CONTEXTUAL_TOOLBAR, true)
     var swipeToRefresh by booleanPreference(SWIPE_TO_REFRESH, true)
 
     // SECURITY: Remote debugging disabled for production security
@@ -118,6 +119,7 @@ class UserPreferences(appContext: Context) : mozilla.components.support.ktx.andr
         const val HIDE_URL_BAR = "hide_url_bar"
         const val STACK_FROM_BOTTOM = "stack_from_bottom"
         const val SHOW_TABS_IN_GRID = "show_tabs_in_grid"
+        const val SHOW_CONTEXTUAL_TOOLBAR = "show_contextual_toolbar"
         const val SWIPE_TO_REFRESH = "swipe_to_refresh"
         const val REMOTE_DEBUGGING = "remote_debugging"
         const val PROMPT_EXTERNAL_DOWNLOADER = "prompt_external_downloader"

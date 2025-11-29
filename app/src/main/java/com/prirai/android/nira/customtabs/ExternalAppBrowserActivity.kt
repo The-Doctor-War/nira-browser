@@ -25,30 +25,26 @@ open class ExternalAppBrowserActivity : BrowserActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        hasCalledOnCreate = true
+        
         // Create a custom tab session from the intent
         val safeIntent = mozilla.components.support.utils.SafeIntent(intent)
         val url = safeIntent.dataString
         
-        if (url != null) {
+        if (url != null && savedInstanceState == null) {
             val customTab = createCustomTab(
                 url = url,
                 source = SessionState.Source.Internal.CustomTab
             )
             components.store.dispatch(CustomTabListAction.AddCustomTabAction(customTab))
-            intent.putExtra("CUSTOM_TAB_ID", customTab.id)
-        }
-        
-        super.onCreate(savedInstanceState)
-        hasCalledOnCreate = true
-        
-        // Navigate to the external app browser fragment
-        if (savedInstanceState == null) {
+            
+            // Navigate to the external app browser fragment
             val navHostFragment = supportFragmentManager.findFragmentById(R.id.container) as? NavHostFragment
             navHostFragment?.let { host ->
-                val customTabId = intent.getStringExtra("CUSTOM_TAB_ID")
                 val bundle = Bundle().apply {
-                    putString("activeSessionId", customTabId)
-                    putString(EXTRA_SESSION_ID, customTabId)
+                    putString("activeSessionId", customTab.id)
+                    putString(EXTRA_SESSION_ID, customTab.id)
                 }
                 host.navController.navigate(R.id.externalAppBrowserFragment, bundle)
             }
@@ -65,8 +61,7 @@ open class ExternalAppBrowserActivity : BrowserActivity() {
     private var hasCalledOnCreate = false
 
     override fun onDestroy() {
-        super.onDestroy()
-
+        // Clean up custom tab session before calling super
         if (isFinishing) {
             // When this activity finishes, the process is staying around and the session still
             // exists then remove it now to free all its resources. Once this activity is finished
@@ -77,6 +72,8 @@ open class ExternalAppBrowserActivity : BrowserActivity() {
                 components.tabsUseCases.removeTab(tabId)
             }
         }
+        
+        super.onDestroy()
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)

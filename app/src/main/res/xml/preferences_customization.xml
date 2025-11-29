@@ -48,6 +48,13 @@
         app:defaultValue="true" />
 
     <SwitchPreferenceCompat
+        app:key="@string/key_show_contextual_toolbar"
+        app:title="@string/show_contextual_toolbar"
+        app:summary="@string/show_contextual_toolbar_desc"
+        app:singleLineTitle="false"
+        app:defaultValue="true" />
+
+    <SwitchPreferenceCompat
         app:key="@string/key_show_tabs_in_grid"
         app:title="@string/tab_grid"
         app:singleLineTitle="false"

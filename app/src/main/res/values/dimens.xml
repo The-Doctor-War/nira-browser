@@ -14,4 +14,5 @@
     <dimen name="tab_icon_size">48dp</dimen>
     <dimen name="find_in_page_height">56dp</dimen>
     <dimen name="find_in_page_margin">16dp</dimen>
+    <dimen name="custom_tab_header_height">56dp</dimen>
 </resources>

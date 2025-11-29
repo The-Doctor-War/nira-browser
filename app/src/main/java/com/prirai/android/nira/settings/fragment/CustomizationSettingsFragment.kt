@@ -191,6 +191,19 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
             onClick = { showFontScaleDialog() }
         )
 
+        switchPreference(
+            preference = requireContext().resources.getString(R.string.key_show_contextual_toolbar),
+            isChecked = UserPreferences(requireContext()).showContextualToolbar,
+            onCheckChange = {
+                UserPreferences(requireContext()).showContextualToolbar = it
+                Toast.makeText(
+                    context,
+                    requireContext().resources.getText(R.string.app_restart),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        )
+
     }
 
     private fun pickBarAddonList() {

@@ -163,12 +163,6 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
         }
-        
-        // Hide the navigation bar completely and make content appear behind it
-        window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        )
 
         ViewCompat.setOnApplyWindowInsetsListener(view) { v, insets ->
             val bars = insets.getInsets(
@@ -195,7 +189,7 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
                 left = bars.left,
                 top = topPadding,
                 right = bars.right,
-                bottom = 0, // Don't add bottom padding - let content flow behind navigation bar
+                bottom = 0
             )
             val insetsController = WindowCompat.getInsetsController(window, v)
             insetsController.isAppearanceLightStatusBars = !isAppInDarkTheme()
@@ -611,12 +605,6 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
         }
-        
-        // Hide the navigation bar completely and make content appear behind it
-        window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        )
     }
 
 

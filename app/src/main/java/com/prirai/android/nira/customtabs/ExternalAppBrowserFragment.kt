@@ -106,10 +106,13 @@ class ExternalAppBrowserFragment : CustomTabBrowserFragment() {
         headerView.layoutParams = layoutParams
         
         // Add header at the top with proper z-index
-        // Insert before the last child (which is usually the stub or other bottom elements)
         headerView.elevation = 8f
         val insertIndex = if (browserLayout.childCount > 0) 0 else 0
         browserLayout.addView(headerView, insertIndex)
+        
+        // Add top padding to EngineView to avoid content being hidden under header
+        val swipeRefresh = view.findViewById<View>(R.id.swipeRefresh)
+        swipeRefresh?.setPadding(0, resources.getDimensionPixelSize(R.dimen.custom_tab_header_height), 0, 0)
         
         // Initialize header views
         customTabHeader = headerView.findViewById(R.id.customTabHeader)
@@ -118,8 +121,12 @@ class ExternalAppBrowserFragment : CustomTabBrowserFragment() {
         customTabMenuButton = headerView.findViewById(R.id.customTabMenuButton)
         customTabCloseButton = headerView.findViewById(R.id.customTabCloseButton)
         
-        // Set up close button
+        // Set up close button - just finish the activity without opening main app
         customTabCloseButton?.setOnClickListener {
+            // Remove the custom tab session
+            customTabSessionId?.let { sessionId ->
+                requireContext().components.tabsUseCases.removeTab(sessionId)
+            }
             requireActivity().finish()
         }
         

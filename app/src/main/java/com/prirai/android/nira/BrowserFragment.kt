@@ -94,142 +94,10 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
     }
 
     private fun setupContextualBottomToolbar() {
-        // Toolbar is managed by ModernToolbarManager
-        // This function is kept for compatibility but actual setup happens in ModernToolbarManager
-        
-        // Use integrated toolbar from the address bar component, fallback to separate one
-        val toolbar =
-            (browserToolbarView.integratedContextualToolbar as? com.prirai.android.nira.toolbar.ContextualBottomToolbar)
-                ?: binding.contextualBottomToolbar
-
-        // Note: The listener is set by ModernToolbarManager, not here
-        // This old code is kept for reference but not used:
-        /*
-        val showBottomToolbar = true
-        if (showBottomToolbar) {
-            toolbar.visibility = View.VISIBLE
-        } else {
-            toolbar.visibility = View.GONE
-        }
-
-        if (showBottomToolbar) {
-            toolbar.listener = object : ContextualBottomToolbar.ContextualToolbarListener {
-                override fun onBackClicked() {
-                    requireContext().components.sessionUseCases.goBack()
-                }
-
-                override fun onForwardClicked() {
-                    requireContext().components.sessionUseCases.goForward()
-                }
-
-                override fun onShareClicked() {
-                    val store = requireContext().components.store.state
-                    val currentTab = store.tabs.find { it.id == store.selectedTabId }
-                    currentTab?.let { tab ->
-                        val shareIntent = android.content.Intent().apply {
-                            action = android.content.Intent.ACTION_SEND
-                            type = "text/plain"
-                            putExtra(android.content.Intent.EXTRA_TEXT, tab.content.url)
-                            putExtra(android.content.Intent.EXTRA_SUBJECT, tab.content.title)
-                        }
-                        startActivity(
-                            android.content.Intent.createChooser(
-                                shareIntent, getString(R.string.share)
-                            )
-                        )
-                    }
-                }
-
-                override fun onSearchClicked() {
-                    // Trigger toolbar click to open search/address bar
-                    android.util.Log.d("BrowserFragment", "Search button clicked on homepage")
-                    browserToolbarView.view.performClick()
-                    android.util.Log.d("BrowserFragment", "Performed click on toolbar view")
-                }
-
-                override fun onNewTabClicked() {
-                    requireContext().components.tabsUseCases.addTab.invoke(
-                        "about:homepage", selectTab = true
-                    )
-                }
-
-                override fun onTabCountClicked() {
-                    // Open tabs bottom sheet
-                    val tabsBottomSheet =
-                        com.prirai.android.nira.browser.tabs.TabsBottomSheetFragment.newInstance()
-                    tabsBottomSheet.show(
-                        parentFragmentManager,
-                        com.prirai.android.nira.browser.tabs.TabsBottomSheetFragment.TAG
-                    )
-                }
-
-                override fun onBookmarksClicked() {
-                    try {
-                        // Use the exact same logic as the three-dot menu
-                        browserInteractor.onBrowserToolbarMenuItemTapped(
-                            com.prirai.android.nira.components.toolbar.ToolbarMenu.Item.Bookmarks
-                        )
-                    } catch (e: Exception) {
-                        android.util.Log.e(
-                            "BookmarkDebug", "❌ WORKING: Error in bookmark handler", e
-                        )
-                    }
-                }
-
-                override fun onMenuClicked() {
-                    // Create and show the menu directly since the toolbar menu builder is disabled
-                    val context = requireContext()
-                    val components = context.components
-
-                    // Create a BrowserMenu instance similar to what BrowserToolbarView does
-                    val browserMenu =
-                        com.prirai.android.nira.components.toolbar.BrowserMenu(
-                            context = context,
-                            store = components.store,
-                            onItemTapped = { item ->
-                                browserInteractor.onBrowserToolbarMenuItemTapped(item)
-                            },
-                            lifecycleOwner = viewLifecycleOwner,
-                            isPinningSupported = components.webAppUseCases.isPinningSupported(),
-                            shouldReverseItems = false
-                        )
-
-                    // Build and show the menu
-                    val menu = browserMenu.menuBuilder.build(context)
-                    val menuButton =
-                        binding.contextualBottomToolbar.findViewById<View>(R.id.menu_button)
-
-                    // Create a temporary view above the button for better positioning
-                    val tempView = android.view.View(context)
-                    tempView.layoutParams = android.view.ViewGroup.LayoutParams(1, 1)
-
-                    // Add the temp view to the parent layout
-                    val parent = binding.contextualBottomToolbar
-                    parent.addView(tempView)
-
-                    // Position the temp view above the menu button
-                    tempView.x = menuButton.x
-                    tempView.y = menuButton.y - 60 // 60px above the button
-
-                    // Show menu anchored to temp view
-                    menu.show(anchor = tempView)
-
-                    // Clean up temp view after menu interaction
-                    tempView.postDelayed({
-                        try {
-                            parent.removeView(tempView)
-                        } catch (e: Exception) {
-                            // Ignore if view was already removed
-                        }
-                    }, 3000) // 3 seconds cleanup delay
-                }
-            }
-        }
-        */
+        // Contextual toolbar is managed by ModernToolbarManager
     }
 
     private fun updateContextualToolbar() {
-        // Safety check: ensure fragment and view are still valid
         if (!isAdded || view == null) return
 
         try {
@@ -238,8 +106,6 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                 val store = requireContext().components.store.state
                 val currentTab = store.tabs.find { it.id == store.selectedTabId }
 
-                // Better homepage detection: only treat as homepage if URL is actually about:homepage
-                // This fixes the forward button issue by properly distinguishing homepage from search results
                 val isHomepage = currentTab?.content?.url == "about:homepage"
 
                 toolbar.updateForContext(
@@ -450,7 +316,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                                 } catch (e: Exception) {
                                     // Ignore if view was already removed
                                 }
-                            }, 3000) // 3 seconds cleanup delay
+                            }, 12000) // 12 seconds cleanup delay
 
                         } else {
                             // Fallback: show menu anchored to the modern toolbar system itself
@@ -509,17 +375,18 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
         val store = requireContext().components.store
         val state = store.state
         val selectedTab = state.tabs.find { it.id == state.selectedTabId }
-        
+
         // Create new tab with current tab as parent to enable auto-grouping
         val newTabId = requireContext().components.tabsUseCases.addTab.invoke(
             url = "about:homepage",
             selectTab = true,
             parentId = selectedTab?.id
         )
-        
+
         // Manually add to island since we're creating from plus button
         if (newTabId != null) {
-            val islandManager = com.prirai.android.nira.components.toolbar.modern.TabIslandManager.getInstance(requireContext())
+            val islandManager =
+                com.prirai.android.nira.components.toolbar.modern.TabIslandManager.getInstance(requireContext())
             islandManager.addTabToIsland(newTabId, islandId)
         }
     }
@@ -560,7 +427,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                     val filteredTabs = state.tabs.filter { tab ->
                         (tab.content.private == isPrivateMode)
                     }
-                    
+
                     modernToolbarManager?.updateTabs(filteredTabs, state.selectedTabId)
 
                     // Update navigation state

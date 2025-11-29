@@ -21,7 +21,7 @@ import com.prirai.android.nira.ext.components
  * Minimal base fragment for custom tabs that skips heavy toolbar initialization.
  * Unlike BaseBrowserFragment, this only initializes essential features needed for custom tabs.
  */
-abstract class CustomTabBrowserFragment : Fragment() {
+abstract class CustomTabBrowserFragment : Fragment(), mozilla.components.support.base.feature.UserInteractionHandler {
 
     protected lateinit var binding: FragmentBrowserBinding
     
@@ -100,7 +100,14 @@ abstract class CustomTabBrowserFragment : Fragment() {
         // Override in subclass if needed
     }
     
-    open fun onBackPressed(): Boolean {
-        return sessionFeature.onBackPressed()
+    override fun onBackPressed(): Boolean {
+        // If the session can go back, let it handle the back press
+        if (sessionFeature.onBackPressed()) {
+            return true
+        }
+        
+        // If no back history, finish the activity to return to calling app
+        requireActivity().finish()
+        return true
     }
 }

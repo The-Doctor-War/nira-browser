@@ -22,10 +22,6 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="@dimen/browser_toolbar_height"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
         android:background="@drawable/address_bar_background"
@@ -45,7 +41,7 @@
         android:id="@+id/contextualBottomToolbarIntegrated"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="visible"
+        android:visibility="gone"
     />
 
 </com.prirai.android.nira.components.toolbar.BottomToolbarContainerView>
